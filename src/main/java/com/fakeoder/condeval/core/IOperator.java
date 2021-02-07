@@ -12,7 +12,7 @@ public interface IOperator{
      * @param params
      * @return
      */
-    Object eval(Object... params);
+    Object eval(String... params);
 
     /**
      * check if number of params is valid
