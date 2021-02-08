@@ -33,13 +33,19 @@ public interface IOperator{
      * get priority
      * @return
      */
-    public int getPriority();
+    int getPriority();
 
     /**
      * get parameters size
      * @return
      */
-    public int getParamSize();
+    int getParamSize();
+
+    /**
+     * if this operator need be pushed
+     * @return
+     */
+    boolean isNeedPush();
 
     /**
      * compare priority

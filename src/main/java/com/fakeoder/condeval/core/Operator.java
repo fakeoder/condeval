@@ -1,8 +1,5 @@
 package com.fakeoder.condeval.core;
 import com.fakeoder.condeval.exception.ExpressionException;
-import com.sun.org.apache.xpath.internal.operations.Bool;
-
-import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +46,7 @@ public enum Operator implements IOperator{
                         break;
                     case ')':
                         params.add(storage);
-                        return idx;
+                        return idx+1;
                     default:
                         storage+=character;
                 }
@@ -69,13 +66,13 @@ public enum Operator implements IOperator{
             return null;
         }
     },
-    AND(2, "&", Boolean.class, 31)  {
+    AND(2, "&&", Boolean.class, 31)  {
         @Override
         public Object eval(String[] params) {
             return Boolean.valueOf(params[0]) && Boolean.valueOf(params[1]);
         }
     },
-    OR(2, "|", Boolean.class, 30)  {
+    OR(2, "||", Boolean.class, 30)  {
         @Override
         public Object eval(String[] params) {
             return Boolean.valueOf(params[0]) || Boolean.valueOf(params[1]);
@@ -147,16 +144,31 @@ public enum Operator implements IOperator{
             return String.join("", params);
         }
     },
-    QUOTATION_SINGLE(0, "'", null, 60) {
+    QUOTATION_SINGLE(0, "'", null, 60, false) {
         @Override
         public Object eval(String[] params) {
             return String.join("", params);
         }
     },
-    QUOTATION_DOUBLE(0, "\"", null, 60) {
+    QUOTATION_DOUBLE(0, "\"", null, 60, false) {
         @Override
         public Object eval(String[] params) {
             return String.join("", params);
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<String> params) {
+            String storage = "";
+            for(;idx<characters.length;idx++){
+                char character = characters[idx];
+                switch (character){
+                    case '"':
+                        params.add(storage);
+                        return idx+1;
+                    default:
+                        storage+=character;
+                }
+            }
+            throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
         }
     };
 
@@ -174,12 +186,21 @@ public enum Operator implements IOperator{
         this.priority = priority;
     }
 
+    Operator(int paramSize,String symbol, Class resultType, int priority, boolean isNeedPush){
+        this.paramSize = paramSize;
+        this.symbol = symbol;
+        this.resultType = resultType;
+        this.priority = priority;
+        this.isNeedPush = isNeedPush;
+    }
+
 
 
     private int paramSize;
     private String symbol;
     private Class resultType;
     private int priority;
+    private boolean isNeedPush = true;
 
 
 
@@ -201,9 +222,16 @@ public enum Operator implements IOperator{
         return priority;
     }
 
+
+
     @Override
     public int getParamSize(){
         return paramSize;
+    }
+
+    @Override
+    public boolean isNeedPush() {
+        return isNeedPush;
     }
 
     @Override

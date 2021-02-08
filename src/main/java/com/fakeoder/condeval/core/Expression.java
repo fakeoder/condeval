@@ -1,6 +1,7 @@
 package com.fakeoder.condeval.core;
 
 import com.fakeoder.condeval.exception.ExpressionException;
+import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
 
 import java.util.*;
 
@@ -64,6 +65,10 @@ public class Expression {
                     preIsOperator = true;
                 }else{
                     idx = expression.pushOperator(storage, characters, idx);
+                    if(idx>characters.length-1){
+                        printStack(expression);
+                        break;
+                    }
                     preOperator = null;
                     storage = characters[idx] + "";
                     preIsOperator = Operator.maybeOperator(characters[idx]+"");
@@ -81,9 +86,14 @@ public class Expression {
                     preIsOperator = false;
                 }
             }
+
+            printStack(expression);
         }
 
-        expression.pushVariable(expressionStr.substring(--idx));
+        if(!preIsOperator){
+            expression.pushVariable(storage);
+            printStack(expression);
+        }
 
         while(!expression.operatorStack.isEmpty()) {
             IOperator operator = expression.operatorStack.pop();
@@ -93,11 +103,12 @@ public class Expression {
             }
             Object result = operator.eval(params);
             expression.pushVariable(result.toString());
+
+            printStack(expression);
         }
 
         System.out.println("finally:");
-        System.out.println(expression.operatorStack);
-        System.out.println(expression.variableStack);
+        printStack(expression);
         return expression.variableStack.pop();
     }
 
@@ -107,7 +118,6 @@ public class Expression {
      */
     private void pushVariable(String variable) {
         variableStack.push(variable);
-        System.out.println(variableStack);
     }
 
     /**
@@ -135,6 +145,7 @@ public class Expression {
         }else {
             IOperator operatorPre = operatorStack.peek();
             if (operator.lessThan(operatorPre)) {
+                operatorStack.pop();
                 String[] params = new String[3];
                 for (int paramIdx = operatorPre.getParamSize() - 1; paramIdx >= 0; paramIdx--) {
                     params[paramIdx] = variableStack.pop();
@@ -142,6 +153,7 @@ public class Expression {
                 //todo check logic
                 Object result = operatorPre.eval(params);
                 pushVariable(result.toString());
+                operatorStack.push(operator);
             }else {
                 if(operator==Operator.BRACKET_RIGHT){
                     IOperator backOperator = null;
@@ -154,8 +166,10 @@ public class Expression {
                         pushVariable(result.toString());
                     }
                 }else {
-                    operatorStack.push(operator);
                     List<String> params = new ArrayList<>();
+                    if(operator.isNeedPush()) {
+                        operatorStack.push(operator);
+                    }
                     //todo this is important, need check.
                     idx = operator.findParameter(characters, idx, params);
                     for (String param : params) {
@@ -164,9 +178,17 @@ public class Expression {
                 }
             }
         }
-        System.out.println(operatorStack);
         //return next index
         return idx;
+    }
+
+    public static void printStack(Expression expression){
+        System.out.println();
+        System.out.println(">>>>>>>>>>>>>>>>>>>>>>");
+        System.out.println(expression.operatorStack);
+        System.out.println(expression.variableStack);
+        System.out.println("<<<<<<<<<<<<<<<<<<<<<<");
+        System.out.println();
     }
 
     /**
@@ -175,4 +197,6 @@ public class Expression {
     private Expression(Map<String,Object> context) {
         this.context = context;
     }
+
+
 }
