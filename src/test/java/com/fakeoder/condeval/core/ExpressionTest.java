@@ -1,6 +1,5 @@
 package com.fakeoder.condeval.core;
 
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.junit.Test;
 
 public class ExpressionTest {
@@ -22,7 +21,21 @@ public class ExpressionTest {
 
     @Test
     public void test03(){
-        Object result =  Expression.eval("(sqrt(4)==2)&&\"true\"",null);
+        Object result =  Expression.eval("(sqrt(4)==2)||\"true\"",null);
+        System.out.println(result);
+        assert Boolean.valueOf(result.toString()).equals(Boolean.TRUE);
+    }
+
+    @Test
+    public void test04(){
+        Object result =  Expression.eval("startWith(abc,a)||\"false\"",null);
+        System.out.println(result);
+        assert Boolean.valueOf(result.toString()).equals(Boolean.TRUE);
+    }
+
+    @Test
+    public void test05(){
+        Object result =  Expression.eval("startWith(abc,a)||\"false\"",null);
         System.out.println(result);
         assert Boolean.valueOf(result.toString()).equals(Boolean.TRUE);
     }

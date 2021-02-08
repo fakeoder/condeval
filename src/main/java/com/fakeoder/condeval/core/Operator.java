@@ -108,46 +108,187 @@ public enum Operator implements IOperator{
             return Double.parseDouble(params[0]) == Double.parseDouble(params[1]);
         }
     },
-    INDEX(2, "indexOf", Integer.class, 20) {
+    INDEX(2, "indexOf", Integer.class, 40) {
         @Override
         public Object eval(String[] params) {
             return params[0].indexOf(params[1]);
         }
+        @Override
+        public int findParameter(char[] characters, int idx, List<String> params) {
+            String storage = "";
+            for(;idx<characters.length;idx++){
+                char character = characters[idx];
+                switch (character){
+                    case '(':
+                        break;
+                    case ')':
+                        params.add(storage);
+                        return idx+1;
+                    case ',':
+                        params.add(storage);
+                        storage = "";
+                        break;
+                    default:
+                        storage+=character;
+                }
+            }
+            throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
+        }
     },
-    CONTAINS(2, "contains", Boolean.class, 20) {
+    CONTAINS(2, "contains", Boolean.class, 40) {
         @Override
         public Object eval(String[] params) {
             return params[0].contains(params[1]);
         }
+        @Override
+        public int findParameter(char[] characters, int idx, List<String> params) {
+            String storage = "";
+            for(;idx<characters.length;idx++){
+                char character = characters[idx];
+                switch (character){
+                    case '(':
+                        break;
+                    case ')':
+                        params.add(storage);
+                        return idx+1;
+                    case ',':
+                        params.add(storage);
+                        storage = "";
+                        break;
+                    default:
+                        storage+=character;
+                }
+            }
+            throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
+        }
     },
-    START_WITH(2, "startWith", Boolean.class, 20) {
+    START_WITH(2, "startWith", Boolean.class, 40) {
         @Override
         public Object eval(String[] params) {
             return params[0].startsWith(params[1]);
         }
+        @Override
+        public int findParameter(char[] characters, int idx, List<String> params) {
+            String storage = "";
+            for(;idx<characters.length;idx++){
+                char character = characters[idx];
+                switch (character){
+                    case '(':
+                        break;
+                    case ')':
+                        params.add(storage);
+                        return idx+1;
+                    case ',':
+                        params.add(storage);
+                        storage = "";
+                        break;
+                    default:
+                        storage+=character;
+                }
+            }
+            throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
+        }
     },
-    END_WITH(2, "endWith", Boolean.class, 18) {
+    END_WITH(2, "endWith", Boolean.class, 40) {
         @Override
         public Object eval(String[] params) {
             return params[0].endsWith(params[1]);
         }
+        @Override
+        public int findParameter(char[] characters, int idx, List<String> params) {
+            String storage = "";
+            for(;idx<characters.length;idx++){
+                char character = characters[idx];
+                switch (character){
+                    case '(':
+                        break;
+                    case ')':
+                        params.add(storage);
+                        return idx+1;
+                    case ',':
+                        params.add(storage);
+                        storage = "";
+                        break;
+                    default:
+                        storage+=character;
+                }
+            }
+            throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
+        }
     },
-    SUBSTRING(3, "substring", String.class, 20) {
+    SUBSTRING(3, "substring", String.class, 40) {
         @Override
         public Object eval(String[] params) {
             return params[0].substring(Integer.parseInt(params[1]), Integer.parseInt(params[2]));
         }
+        @Override
+        public int findParameter(char[] characters, int idx, List<String> params) {
+            String storage = "";
+            for(;idx<characters.length;idx++){
+                char character = characters[idx];
+                switch (character){
+                    case '(':
+                        break;
+                    case ')':
+                        params.add(storage);
+                        return idx+1;
+                    case ',':
+                        params.add(storage);
+                        storage = "";
+                        break;
+                    default:
+                        storage+=character;
+                }
+            }
+            throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
+        }
     },
-    CONCAT(2, "concat", String.class, 20) {
+    CONCAT(2, "concat", String.class, 40) {
         @Override
         public Object eval(String[] params) {
             return String.join("", params);
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<String> params) {
+            String storage = "";
+            for(;idx<characters.length;idx++){
+                char character = characters[idx];
+                switch (character){
+                    case '(':
+                        break;
+                    case ')':
+                        params.add(storage);
+                        return idx+1;
+                    case ',':
+                        params.add(storage);
+                        storage = "";
+                        break;
+                    default:
+                        storage+=character;
+                }
+            }
+            throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
         }
     },
     QUOTATION_SINGLE(0, "'", null, 60, false) {
         @Override
         public Object eval(String[] params) {
             return String.join("", params);
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<String> params) {
+            String storage = "";
+            for(;idx<characters.length;idx++){
+                char character = characters[idx];
+                switch (character){
+                    case '"':
+                        params.add(storage);
+                        return idx+1;
+                    default:
+                        storage+=character;
+                }
+            }
+            throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
         }
     },
     QUOTATION_DOUBLE(0, "\"", null, 60, false) {
