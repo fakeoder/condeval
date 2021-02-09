@@ -1,7 +1,6 @@
 package com.fakeoder.condeval.core;
 
 import com.fakeoder.condeval.exception.ExpressionException;
-import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
 
 import java.util.*;
 
@@ -15,12 +14,12 @@ public class Expression {
     /**
      * operator stack
      */
-    private Stack<IOperator> operatorStack = new Stack<>();
+    private Stack<IOperator> operatorStack = new CustomStack("OPERATOR");
 
     /**
      * operator number stack
      */
-    private Stack<String> variableStack = new Stack<>();
+    private Stack<String> variableStack = new CustomStack("VARIABLE");
 
 
     /**
@@ -44,6 +43,7 @@ public class Expression {
         char[] characters = expressionStr.toCharArray();
         String storage = "";
         boolean preIsOperator = false;
+        boolean hasLeft = true;
         Operator preOperator = null;
         int idx = 0;
         for(; idx < characters.length; idx++){
@@ -66,7 +66,7 @@ public class Expression {
                 }else{
                     idx = expression.pushOperator(storage, characters, idx);
                     if(idx>characters.length-1){
-                        printStack(expression);
+                        hasLeft = false;
                         break;
                     }
                     preOperator = null;
@@ -86,29 +86,22 @@ public class Expression {
                     preIsOperator = false;
                 }
             }
-
-            printStack(expression);
         }
 
-        if(!preIsOperator){
-            expression.pushVariable(storage);
-            printStack(expression);
+        if(hasLeft) {
+            if (!preIsOperator) {
+                expression.pushVariable(storage);
+            } else {
+                //must be right bracket
+                expression.rightBracketDeal();
+            }
         }
+
 
         while(!expression.operatorStack.isEmpty()) {
             IOperator operator = expression.operatorStack.pop();
-            String[] params = new String[3];
-            for (int paramIdx = operator.getParamSize() - 1; paramIdx >= 0; paramIdx--) {
-                params[paramIdx] = expression.variableStack.pop();
-            }
-            Object result = operator.eval(params);
-            expression.pushVariable(result.toString());
-
-            printStack(expression);
+            expression.operatorEval(operator);
         }
-
-        System.out.println("finally:");
-        printStack(expression);
         return expression.variableStack.pop();
     }
 
@@ -118,6 +111,16 @@ public class Expression {
      */
     private void pushVariable(String variable) {
         variableStack.push(variable);
+    }
+
+    /**
+     *
+     * @param params
+     */
+    private void pushVariables(List<String> params) {
+        for (String param : params) {
+            pushVariable(param);
+        }
     }
 
     /**
@@ -139,32 +142,18 @@ public class Expression {
             List<String> params = new ArrayList<>();
             //todo this is important, need check.
             idx = operator.findParameter(characters,idx, params);
-            for(String param : params){
-                pushVariable(param);
-            }
+            pushVariables(params);
         }else {
             IOperator operatorPre = operatorStack.peek();
             if (operator.lessThan(operatorPre)) {
-                operatorStack.pop();
-                String[] params = new String[3];
-                for (int paramIdx = operatorPre.getParamSize() - 1; paramIdx >= 0; paramIdx--) {
-                    params[paramIdx] = variableStack.pop();
+                if(operator!=Operator.BRACKET_LEFT) {
+                    operatorStack.pop();
+                    operatorEval(operatorPre);
                 }
-                //todo check logic
-                Object result = operatorPre.eval(params);
-                pushVariable(result.toString());
                 operatorStack.push(operator);
             }else {
                 if(operator==Operator.BRACKET_RIGHT){
-                    IOperator backOperator = null;
-                    while((backOperator=operatorStack.pop())!=Operator.BRACKET_LEFT) {
-                        String[] params = new String[3];
-                        for (int paramIdx = backOperator.getParamSize() - 1; paramIdx >= 0; paramIdx--) {
-                            params[paramIdx] = variableStack.pop();
-                        }
-                        Object result = backOperator.eval(params);
-                        pushVariable(result.toString());
-                    }
+                    rightBracketDeal();
                 }else {
                     List<String> params = new ArrayList<>();
                     if(operator.isNeedPush()) {
@@ -172,9 +161,7 @@ public class Expression {
                     }
                     //todo this is important, need check.
                     idx = operator.findParameter(characters, idx, params);
-                    for (String param : params) {
-                        pushVariable(param);
-                    }
+                    pushVariables(params);
                 }
             }
         }
@@ -182,14 +169,43 @@ public class Expression {
         return idx;
     }
 
-    public static void printStack(Expression expression){
-        System.out.println();
-        System.out.println(">>>>>>>>>>>>>>>>>>>>>>");
-        System.out.println(expression.operatorStack);
-        System.out.println(expression.variableStack);
-        System.out.println("<<<<<<<<<<<<<<<<<<<<<<");
-        System.out.println();
+    /**
+     * visit right bracket, should back, eval and push value
+     */
+    public void rightBracketDeal(){
+        IOperator backOperator = null;
+        while((backOperator=operatorStack.pop())!=Operator.BRACKET_LEFT) {
+            String[] params = new String[backOperator.getParamSize()];
+            for (int paramIdx = backOperator.getParamSize() - 1; paramIdx >= 0; paramIdx--) {
+                params[paramIdx] = variableStack.pop();
+            }
+            Object result = backOperator.evalAround(params);
+            pushVariable(result.toString());
+        }
     }
+
+    /**
+     * eval operator
+     * @param operator
+     */
+    public void operatorEval(IOperator operator){
+        String[] params = new String[operator.getParamSize()];
+        for (int paramIdx = operator.getParamSize() - 1; paramIdx >= 0; paramIdx--) {
+            String val = variableStack.pop();
+            //todo variables?(${name},"abc",123):expression(a+1)
+            if(Variable.isVariable(val)) {
+                params[paramIdx] = Variable.realVariable(val,context);
+            }else{
+                Object res = Expression.eval(val,context);
+                params[paramIdx] = res==null?"":res.toString();
+            }
+
+        }
+        //todo check logic
+        Object result = operator.evalAround(params);
+        pushVariable(result.toString());
+    }
+
 
     /**
      * private
