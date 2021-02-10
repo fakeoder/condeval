@@ -61,4 +61,14 @@ public class ExpressionTest {
         assert Boolean.valueOf(result.toString()).equals(Boolean.TRUE);
     }
 
+    @Test
+    public void test09(){
+        Map<String,Object> context = new HashMap<>();
+        Map<String,Object> context_in = new HashMap<>();
+        context_in.put("b","a");
+        context.put("a",context_in);
+        Object result =  Expression.eval("equals(indexOf(abcd,${a.b}),0)",context);
+        assert Boolean.valueOf(result.toString()).equals(Boolean.TRUE);
+    }
+
 }
