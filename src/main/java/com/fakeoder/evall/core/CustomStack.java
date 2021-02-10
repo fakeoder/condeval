@@ -1,4 +1,4 @@
-package com.fakeoder.condeval.core;
+package com.fakeoder.evall.core;
 
 import org.apache.log4j.Logger;
 

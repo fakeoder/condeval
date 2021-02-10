@@ -1,4 +1,4 @@
-package com.fakeoder.condeval.exception;
+package com.fakeoder.evall.exception;
 
 public class ExpressionException extends RuntimeException{
 

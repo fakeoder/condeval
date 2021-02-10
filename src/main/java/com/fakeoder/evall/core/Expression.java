@@ -1,6 +1,6 @@
-package com.fakeoder.condeval.core;
+package com.fakeoder.evall.core;
 
-import com.fakeoder.condeval.exception.ExpressionException;
+import com.fakeoder.evall.exception.ExpressionException;
 
 import java.util.*;
 
