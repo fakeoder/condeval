@@ -7,6 +7,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * @author zhuo
+ */
+
 public enum Operator implements IOperator{
 
     ADD(2, "+", Number.class, 1){
@@ -41,7 +45,7 @@ public enum Operator implements IOperator{
 
         @Override
         public int findParameter(char[] characters, int idx, List<String> params) {
-            return findParameterNew(characters,idx,params);
+            return doFindParameter(characters,idx,params);
         }
     },
     BRACKET_LEFT(0, "(", null, 0)  {
@@ -105,7 +109,7 @@ public enum Operator implements IOperator{
         }
         @Override
         public int findParameter(char[] characters, int idx, List<String> params) {
-            return findParameterNew(characters,idx,params);
+            return doFindParameter(characters,idx,params);
         }
     },
     CONTAINS(2, "contains", Boolean.class, 40) {
@@ -115,7 +119,7 @@ public enum Operator implements IOperator{
         }
         @Override
         public int findParameter(char[] characters, int idx, List<String> params) {
-            return findParameterNew(characters,idx,params);
+            return doFindParameter(characters,idx,params);
         }
     },
     START_WITH(2, "startWith", Boolean.class, 40) {
@@ -125,7 +129,7 @@ public enum Operator implements IOperator{
         }
         @Override
         public int findParameter(char[] characters, int idx, List<String> params) {
-            return findParameterNew(characters,idx,params);
+            return doFindParameter(characters,idx,params);
         }
     },
     END_WITH(2, "endWith", Boolean.class, 40) {
@@ -135,17 +139,17 @@ public enum Operator implements IOperator{
         }
         @Override
         public int findParameter(char[] characters, int idx, List<String> params) {
-            return findParameterNew(characters,idx,params);
+            return doFindParameter(characters,idx,params);
         }
     },
-    SUBSTRING(3, "substring", String.class, 40) {
+    SUBSTRING(3, "subString", String.class, 40) {
         @Override
         public Object eval(String[] params) {
             return params[0].substring(Integer.parseInt(params[1]), Integer.parseInt(params[2]));
         }
         @Override
         public int findParameter(char[] characters, int idx, List<String> params) {
-            return findParameterNew(characters,idx,params);
+            return doFindParameter(characters,idx,params);
         }
     },
     CONCAT(2, "concat", String.class, 40) {
@@ -155,7 +159,7 @@ public enum Operator implements IOperator{
         }
         @Override
         public int findParameter(char[] characters, int idx, List<String> params) {
-            return findParameterNew(characters,idx,params);
+            return doFindParameter(characters,idx,params);
         }
     },
     EQUALS(2, "equals", String.class, 40) {
@@ -165,49 +169,7 @@ public enum Operator implements IOperator{
         }
         @Override
         public int findParameter(char[] characters, int idx, List<String> params) {
-            return findParameterNew(characters,idx,params);
-        }
-    },
-    QUOTATION_SINGLE(0, "'", null, 60, false) {
-        @Override
-        public Object eval(String[] params) {
-            return String.join("", params);
-        }
-        @Override
-        public int findParameter(char[] characters, int idx, List<String> params) {
-            String storage = "";
-            for(;idx<characters.length;idx++){
-                char character = characters[idx];
-                switch (character){
-                    case '"':
-                        params.add(storage);
-                        return idx+1;
-                    default:
-                        storage+=character;
-                }
-            }
-            throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
-        }
-    },
-    QUOTATION_DOUBLE(0, "\"", null, 60, false) {
-        @Override
-        public Object eval(String[] params) {
-            return String.join("", params);
-        }
-        @Override
-        public int findParameter(char[] characters, int idx, List<String> params) {
-            String storage = "";
-            for(;idx<characters.length;idx++){
-                char character = characters[idx];
-                switch (character){
-                    case '"':
-                        params.add(storage);
-                        return idx+1;
-                    default:
-                        storage+=character;
-                }
-            }
-            throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
+            return doFindParameter(characters,idx,params);
         }
     };
 
@@ -338,7 +300,7 @@ public enum Operator implements IOperator{
         return this.priority < other.getPriority();
     }
 
-    private static int findParameterNew(char[] characters, int idx, List<String> params){
+    private static int doFindParameter(char[] characters, int idx, List<String> params){
         String storage = "";
         idx++;
         int right = 0;
@@ -371,26 +333,5 @@ public enum Operator implements IOperator{
             }
         }
         throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
-    }
-    private static int findParameterOld(char[] characters, int idx, List<String> params) {
-        String storage = "";
-        for (; idx < characters.length; idx++) {
-            char character = characters[idx];
-            switch (character) {
-                case '(':
-                    break;
-                case ')':
-                    params.add(storage);
-                    return idx + 1;
-                case ',':
-                    params.add(storage);
-                    storage = "";
-                    break;
-                default:
-                    storage += character;
-            }
-        }
-        throw new ExpressionException(String.format("find parameters error! idx:%s", idx));
-
     }
 }

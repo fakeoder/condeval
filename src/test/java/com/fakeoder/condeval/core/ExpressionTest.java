@@ -22,26 +22,26 @@ public class ExpressionTest {
 
     @Test
     public void test03(){
-        Object result =  Expression.eval("(sqrt(4)==2)||\"true\"",null);
+        Object result =  Expression.eval("(sqrt(4)==3)||concat(true,'')",null);
         assert Boolean.valueOf(result.toString()).equals(Boolean.TRUE);
     }
 
     @Test
     public void test04(){
-        Object result =  Expression.eval("startWith(abc,a)||\"false\"",null);
+        Object result =  Expression.eval("startWith(abc,a)||concat(false,'')",null);
         assert Boolean.valueOf(result.toString()).equals(Boolean.TRUE);
     }
 
     @Test
     public void test05(){
-        Object result =  Expression.eval("startWith(abc,a)||\"false\"",null);
+        Object result =  Expression.eval("startWith(abc,a)||concat(false,'')",null);
         assert Boolean.valueOf(result.toString()).equals(Boolean.TRUE);
     }
 
 
     @Test
     public void test06(){
-        Object result =  Expression.eval("startWith(abc,a)||\"false\"||(indexOf(abc,a)==1)",null);
+        Object result =  Expression.eval("startWith(abc,a)||concat(false,'')||(indexOf(abc,a)==1)",null);
         assert Boolean.valueOf(result.toString()).equals(Boolean.TRUE);
     }
 
