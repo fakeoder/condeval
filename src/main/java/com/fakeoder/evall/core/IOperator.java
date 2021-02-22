@@ -12,7 +12,7 @@ public interface IOperator{
      * @param params
      * @return
      */
-    Object evalAround(String... params);
+    Object evalAround(Object... params);
 
 
     /**
@@ -21,7 +21,7 @@ public interface IOperator{
      * @param idx
      * @param params
      */
-    int findParameter(char[] characters, int idx, List<String> params);
+    int findParameter(char[] characters, int idx, List<Object> params);
 
     /**
      * get priority

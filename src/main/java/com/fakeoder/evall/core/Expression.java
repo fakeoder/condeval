@@ -19,7 +19,7 @@ public class Expression {
     /**
      * operator number stack
      */
-    private Stack<String> variableStack = new CustomStack("VARIABLE");
+    private Stack<Object> variableStack = new CustomStack("VARIABLE");
 
 
     /**
@@ -109,7 +109,7 @@ public class Expression {
      *
      * @param variable
      */
-    private void pushVariable(String variable) {
+    private void pushVariable(Object variable) {
         variableStack.push(variable);
     }
 
@@ -117,8 +117,8 @@ public class Expression {
      *
      * @param params
      */
-    private void pushVariables(List<String> params) {
-        for (String param : params) {
+    private void pushVariables(List<Object> params) {
+        for (Object param : params) {
             pushVariable(param);
         }
     }
@@ -138,11 +138,18 @@ public class Expression {
         }
 
         if(operatorStack.isEmpty()){
-            operatorStack.push(operator);
-            List<String> params = new ArrayList<>();
+            if(operator.isNeedPush()) {
+                operatorStack.push(operator);
+            }
+            List<Object> params = new ArrayList<>();
             //todo this is important, need check.
             idx = operator.findParameter(characters,idx, params);
-            pushVariables(params);
+            if(operator==Operator.DOLLAR){
+                Object variable = Variable.VariableMatcher.findRealValue(params.get(0).toString(),context);
+                pushVariable(variable);
+            }else {
+                pushVariables(params);
+            }
         }else {
             IOperator operatorPre = operatorStack.peek();
             if (operator.lessThan(operatorPre)) {
@@ -150,18 +157,25 @@ public class Expression {
                     operatorStack.pop();
                     operatorEval(operatorPre);
                 }
-                operatorStack.push(operator);
+                if(operator.isNeedPush()) {
+                    operatorStack.push(operator);
+                }
             }else {
                 if(operator==Operator.BRACKET_RIGHT){
                     rightBracketDeal();
                 }else {
-                    List<String> params = new ArrayList<>();
+                    List<Object> params = new ArrayList<>();
                     if(operator.isNeedPush()) {
                         operatorStack.push(operator);
                     }
                     //todo this is important, need check.
                     idx = operator.findParameter(characters, idx, params);
-                    pushVariables(params);
+                    if(operator==Operator.DOLLAR){
+                        Object variable = Variable.VariableMatcher.findRealValue(params.get(0).toString(),context);
+                        pushVariable(variable);
+                    }else {
+                        pushVariables(params);
+                    }
                 }
             }
         }
@@ -175,12 +189,12 @@ public class Expression {
     public void rightBracketDeal(){
         IOperator backOperator = null;
         while((backOperator=operatorStack.pop())!=Operator.BRACKET_LEFT) {
-            String[] params = new String[backOperator.getParamSize()];
+            Object[] params = new Object[backOperator.getParamSize()];
             for (int paramIdx = backOperator.getParamSize() - 1; paramIdx >= 0; paramIdx--) {
                 params[paramIdx] = variableStack.pop();
             }
             Object result = backOperator.evalAround(params);
-            pushVariable(result.toString());
+            pushVariable(result);
         }
     }
 
@@ -189,21 +203,24 @@ public class Expression {
      * @param operator
      */
     public void operatorEval(IOperator operator){
-        String[] params = new String[operator.getParamSize()];
+        Object[] params = new Object[operator.getParamSize()];
         for (int paramIdx = operator.getParamSize() - 1; paramIdx >= 0; paramIdx--) {
-            String val = variableStack.pop();
+            if(variableStack.isEmpty()){
+                throw new ExpressionException("params stack is empty! please check expression!");
+            }
+            Object val = variableStack.pop();
             //todo variables?(${name},"abc",123):expression(a+1)
-            if(Variable.isVariable(val)) {
-                params[paramIdx] = Variable.realVariable(val,context);
+            if(Variable.isVariable(val.toString())) {
+                params[paramIdx] = Variable.realVariable(val.toString(),context);
             }else{
-                Object res = Expression.eval(val,context);
-                params[paramIdx] = res==null?"":res.toString();
+                Object res = Expression.eval(val.toString(),context);
+                params[paramIdx] = res;
             }
 
         }
         //todo check logic
         Object result = operator.evalAround(params);
-        pushVariable(result.toString());
+        pushVariable(result);
     }
 
 

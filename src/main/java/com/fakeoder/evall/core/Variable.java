@@ -29,7 +29,7 @@ public class Variable {
 
     }
 
-    public static String realVariable(String variable, Map<String, Object> context) {
+    public static Object realVariable(String variable, Map<String, Object> context) {
         return VariableMatcher.findRealValue(variable,context);
     }
 
@@ -37,8 +37,8 @@ public class Variable {
 
         PATTERN_DIGITAL{
             @Override
-            String realValue(String variable, Map<String,Object> context) {
-                return variable;
+            Number realValue(String variable, Map<String,Object> context) {
+                return Double.parseDouble(variable);
             }
 
             @Override
@@ -46,13 +46,19 @@ public class Variable {
                 return VARIABLE_PATTERN_DIGITAL.matcher(variable).matches();
             }
 
-            private final Pattern VARIABLE_PATTERN_DIGITAL = Pattern.compile("-?[0-9]+.?[0-9]*");
+            private final Pattern VARIABLE_PATTERN_DIGITAL = Pattern.compile("-?[0-9]+\\.?[0-9]*");
 
         },PATTERN_CONTEXT{
             @Override
-            String realValue(String variable, Map<String,Object> context) {
-                String result = "";
+            Object realValue(String variable, Map<String,Object> context) {
+                Object result = "";
                 String unpack = variable.substring(2,variable.length()-1);
+                if(unpack.equals(SELF_SIGN)){
+                    if(context.containsKey(SELF_SIGN)){
+                        return context.get(SELF_SIGN);
+                    }
+                    return context;
+                }
                 String[] packs = unpack.split(REGEX_DOT);
                 for(String pack : packs){
                     if(context==null){
@@ -61,8 +67,9 @@ public class Variable {
                     Object object = context.get(pack);
                     if(object instanceof Map){
                         context = (Map)object;
+                        result = object;
                     }else{
-                        result = object==null?"":object.toString();
+                        result = object;
                         context = null;
                     }
                 }
@@ -74,7 +81,7 @@ public class Variable {
                 return VARIABLE_PATTERN_CONTEXT.matcher(variable).matches();
             }
 
-            private final Pattern VARIABLE_PATTERN_CONTEXT = Pattern.compile("\\$\\{[a-zA-Z0-9_\\.]+\\}");
+            private final Pattern VARIABLE_PATTERN_CONTEXT = Pattern.compile("\\$\\{[a-zA-Z0-9_\\@\\.]+\\}");
 
         },PATTERN_STRING{
             @Override
@@ -92,14 +99,14 @@ public class Variable {
         };
 
         private static final String REGEX_DOT = "\\.";
-
+        private static final String SELF_SIGN = "@";
         /**
          * value transform
          * @param variable
          * @param context
          * @return
          */
-        abstract String realValue(String variable, Map<String,Object> context);
+        abstract Object realValue(String variable, Map<String,Object> context);
 
         /**
          * @param variable
@@ -107,13 +114,13 @@ public class Variable {
          */
         abstract boolean doMatch(String variable);
 
-        public static VariableMatcher match(String variable){
+        public static VariableMatcher match(String variable)  {
             for(VariableMatcher variableMatcher : VariableMatcher.values()){
                 if(variableMatcher.doMatch(variable)){
                     return variableMatcher;
                 }
             }
-            throw new ExpressionException(String.format("no match variables matcher!",variable));
+            throw new ExpressionException(String.format("no match variables matcher![%s]",variable));
         }
 
         /**
@@ -122,7 +129,7 @@ public class Variable {
          * @param context
          * @return
          */
-        public static String findRealValue(String variable, Map<String,Object> context){
+        public static Object findRealValue(String variable, Map<String,Object> context){
             return match(variable).realValue(variable, context);
         }
 
