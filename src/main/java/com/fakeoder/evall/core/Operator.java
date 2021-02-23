@@ -1,7 +1,6 @@
 package com.fakeoder.evall.core;
 import com.alibaba.fastjson.JSONObject;
 import com.fakeoder.evall.exception.ExpressionException;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.log4j.Logger;
 
 import java.util.*;
