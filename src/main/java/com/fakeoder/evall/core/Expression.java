@@ -9,17 +9,17 @@ import java.util.*;
  */
 public class Expression {
 
-    private Map<String,Object> context;
+    private final Map<String,Object> context;
 
     /**
      * operator stack
      */
-    private Stack<IOperator> operatorStack = new CustomStack("OPERATOR");
+    private final Stack<IOperator> operatorStack = new CustomStack("OPERATOR");
 
     /**
      * operator number stack
      */
-    private Stack<Object> variableStack = new CustomStack("VARIABLE");
+    private final Stack<Object> variableStack = new CustomStack("VARIABLE");
 
 
     /**
@@ -44,24 +44,12 @@ public class Expression {
         String storage = "";
         boolean preIsOperator = false;
         boolean hasLeft = true;
-        Operator preOperator = null;
         int idx = 0;
         for(; idx < characters.length; idx++){
             if(preIsOperator){
+                //if current match, try to find the max length operator
                 if(Operator.maybeOperator(storage+characters[idx])) {
-                    Operator operator = Operator.valueOfSymbol(storage + characters[idx]);
-                    if (operator == null) {
-                        if (preOperator != null) {
-                            idx = expression.pushOperator(preOperator.getSymbol(), characters, idx);
-                            preOperator = null;
-                            storage = characters[idx] + "";
-                        } else {
-                            storage += characters[idx];
-                        }
-                    } else {
-                        preOperator = operator;
-                        storage += characters[idx];
-                    }
+                    storage += characters[idx];
                     preIsOperator = true;
                 }else{
                     idx = expression.pushOperator(storage, characters, idx);
@@ -69,7 +57,6 @@ public class Expression {
                         hasLeft = false;
                         break;
                     }
-                    preOperator = null;
                     storage = characters[idx] + "";
                     preIsOperator = Operator.maybeOperator(characters[idx]+"");
                 }
@@ -210,8 +197,8 @@ public class Expression {
             }
             Object val = variableStack.pop();
             //todo variables?(${name},"abc",123):expression(a+1)
-            if(Variable.isVariable(val.toString())) {
-                params[paramIdx] = Variable.realVariable(val.toString(),context);
+            if(Variable.isVariable(val)) {
+                params[paramIdx] = Variable.realVariable(val,context);
             }else{
                 Object res = Expression.eval(val.toString(),context);
                 params[paramIdx] = res;

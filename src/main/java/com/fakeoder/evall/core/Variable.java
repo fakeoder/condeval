@@ -18,9 +18,13 @@ public class Variable {
      * @param variable
      * @return
      */
-    public static boolean isVariable(String variable){
+    public static boolean isVariable(Object variable){
         try {
-            VariableMatcher.match(variable);
+            if(variable instanceof String) {
+                VariableMatcher.match(variable.toString());
+            }else{
+                return true;
+            }
         }catch (ExpressionException e){
             //todo check
             return false;
@@ -29,15 +33,18 @@ public class Variable {
 
     }
 
-    public static Object realVariable(String variable, Map<String, Object> context) {
+    public static Object realVariable(Object variable, Map<String, Object> context) {
         return VariableMatcher.findRealValue(variable,context);
     }
 
-    static enum VariableMatcher{
+    enum VariableMatcher{
 
         PATTERN_DIGITAL{
             @Override
             Number realValue(String variable, Map<String,Object> context) {
+                if(variable.indexOf(DOT)==-1){
+                    return Integer.parseInt(variable);
+                }
                 return Double.parseDouble(variable);
             }
 
@@ -47,6 +54,7 @@ public class Variable {
             }
 
             private final Pattern VARIABLE_PATTERN_DIGITAL = Pattern.compile("-?[0-9]+\\.?[0-9]*");
+            private final String DOT = ".";
 
         },PATTERN_CONTEXT{
             @Override
@@ -86,7 +94,7 @@ public class Variable {
         },PATTERN_STRING{
             @Override
             String realValue(String variable, Map<String,Object> context) {
-                return variable.replaceAll("\"","").replaceAll("'","");
+                return variable.substring(1,variable.length()-1);
             }
 
             @Override
@@ -94,7 +102,7 @@ public class Variable {
                 return VARIABLE_PATTERN_STRING.matcher(variable).matches();
             }
 
-            private final Pattern VARIABLE_PATTERN_STRING = Pattern.compile("(\".*\")|('.*')|([a-zA-Z0-9_\\.]+)");
+            private final Pattern VARIABLE_PATTERN_STRING = Pattern.compile("(\".*\")|('.*')");
 
         };
 
@@ -129,8 +137,11 @@ public class Variable {
          * @param context
          * @return
          */
-        public static Object findRealValue(String variable, Map<String,Object> context){
-            return match(variable).realValue(variable, context);
+        public static Object findRealValue(Object variable, Map<String,Object> context){
+            if(variable instanceof String){
+                return match(variable.toString()).realValue(variable.toString(), context);
+            }
+            return variable;
         }
 
 

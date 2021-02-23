@@ -9,8 +9,8 @@ import java.util.Stack;
  */
 public class CustomStack extends Stack {
 
-    private static Logger log = Logger.getLogger(CustomStack.class);
-    private String name;
+    private static final Logger log = Logger.getLogger(CustomStack.class);
+    private final String name;
 
     public CustomStack(String name){
         this.name = name;

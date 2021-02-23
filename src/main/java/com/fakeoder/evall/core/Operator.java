@@ -240,7 +240,7 @@ public enum Operator implements IOperator{
     EQUALS(2, "equals", String.class, 40) {
         @Override
         public Object eval(Object[] params) {
-            return params[0].equals(params[1]);
+            return params[0].toString().equals(params[1].toString());
         }
         @Override
         public int findParameter(char[] characters, int idx, List<Object> params) {
@@ -261,7 +261,7 @@ public enum Operator implements IOperator{
     MIN_SEQ(1, "minOf", Object.class, 40) {
         @Override
         public Object eval(Object[] params) {
-            return Collections.max((Collection) params[0]);
+            return Collections.min((Collection) params[0]);
         }
         @Override
         public int findParameter(char[] characters, int idx, List<Object> params) {
@@ -350,7 +350,7 @@ public enum Operator implements IOperator{
             return doFindParameter(characters,idx,params);
         }
     },
-    ALL_MATCH(2, "anyMatch", Collection.class, 40) {
+    ALL_MATCH(2, "allMatch", Collection.class, 40) {
         @Override
         public Object eval(Object[] params) {
             if(params[0] instanceof Collection){
@@ -400,13 +400,13 @@ public enum Operator implements IOperator{
 
 
 
-    private int paramSize;
-    private String symbol;
-    private Class resultType;
-    private int priority;
+    private final int paramSize;
+    private final String symbol;
+    private final Class resultType;
+    private final int priority;
     private boolean isNeedPush = true;
 
-    private static Logger log = Logger.getLogger(Operator.class);
+    private static final Logger log = Logger.getLogger(Operator.class);
 
 
 
