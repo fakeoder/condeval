@@ -267,6 +267,28 @@ public enum Operator implements IOperator{
             return doFindParameter(characters,idx,params);
         }
     },
+    //for list
+    SUM(1, "sum", Object.class, 40) {
+        @Override
+        public Object eval(Object[] params) {
+            return ((Collection) params[0]).stream().reduce(0,(acc, item)-> Double.parseDouble(acc.toString())+Double.parseDouble(item.toString()));
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+    },
+    //for list
+    CONCAT_SEQ(1, "concatFrom", Object.class, 40) {
+        @Override
+        public Object eval(Object[] params) {
+            return ((Collection) params[0]).stream().reduce(0,(acc, item)-> (acc.toString()+item.toString()));
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+    },
     IF(3, "if", Object.class, 40) {
         @Override
         public Object eval(Object[] params) {
@@ -298,8 +320,65 @@ public enum Operator implements IOperator{
             return doFindParameter(characters,idx,params);
         }
     },
+    //for list
+    DISTINCT(1, "distinct", Collection.class, 40) {
+        @Override
+        public Object eval(Object[] params) {
+            return ((Collection)params[0]).stream().distinct().collect(Collectors.toList());
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+    },
+    //for set and array
+    AS_LIST(1, "asList", Map.class, 40) {
+        @Override
+        public Object eval(Object[] params) {
+            if(params[0].getClass().isArray()){
+                return Arrays.stream((Object[])params[0]).collect(Collectors.toList());
+            }
+            if(params[0] instanceof Set){
+                return ((Set)params[0]).stream().collect(Collectors.toList());
+            }
+            throw new ExpressionException("params type disMatch:"+JSONObject.toJSONString(params));
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+    },
+    //for List args:[0:list,1:sort column,2:asc/desc]
+    SORT(3, "sort", Map.class, 40) {
+        private final static String ASC = "asc";
+        private final static String DESC = "desc";
+        @Override
+        public Object eval(Object[] params) {
+            if(params[0] instanceof List){
+                Collections.sort((List)params[0],(left,right)->{
+                    Object leftV = Expression.eval(unpack(params[1].toString()),object2Map(left));
+                    Object rightV = Expression.eval(unpack(params[1].toString()),object2Map(right));
+                    String type = params[2].toString();
+                    switch (type){
+                        case ASC:
+                            return compare(leftV,rightV);
+                        case DESC:
+                            return compare(rightV,leftV);
+                        default:
+                            throw new ExpressionException("");
+                    }
+                });
+                return params[0];
+            }
+            throw new ExpressionException("params type disMatch:"+JSONObject.toJSONString(params));
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+    },
     //args:[0:collection,1:key expression,2:value expression]
-    BE_MAP(3, "beMap", Map.class, 40) {
+    AS_MAP(3, "asMap", Map.class, 40) {
         @Override
         public Object eval(Object[] params) {
             if(params[0] instanceof Collection){
@@ -309,6 +388,34 @@ public enum Operator implements IOperator{
                     rsl.put(Expression.eval(unpack(params[1].toString()),context).toString(),Expression.eval(unpack(params[2].toString()),context));
                 }
                 return rsl;
+            }
+            throw new ExpressionException("params type disMatch:"+JSONObject.toJSONString(params));
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+    },
+    //for map
+    KEY_SET(3, "keySet", Map.class, 40) {
+        @Override
+        public Object eval(Object[] params) {
+            if(params[0] instanceof Map){
+                return ((Map)params[0]).keySet();
+            }
+            throw new ExpressionException("params type disMatch:"+JSONObject.toJSONString(params));
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+    },
+    //for map
+    VALUES(3, "values", Map.class, 40) {
+        @Override
+        public Object eval(Object[] params) {
+            if(params[0] instanceof Map){
+                return ((Map)params[0]).values();
             }
             throw new ExpressionException("params type disMatch:"+JSONObject.toJSONString(params));
         }
@@ -365,6 +472,7 @@ public enum Operator implements IOperator{
             return doFindParameter(characters,idx,params);
         }
     },
+
 
     //TODO other operators
 
@@ -502,6 +610,13 @@ public enum Operator implements IOperator{
         return this.priority < other.getPriority();
     }
 
+    /**
+     * method parameter find
+     * @param characters
+     * @param idx
+     * @param params
+     * @return
+     */
     private static int doFindParameter(char[] characters, int idx, List<Object> params){
         String storage = "";
         idx++;
@@ -537,6 +652,13 @@ public enum Operator implements IOperator{
         throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
     }
 
+    /**
+     * find parameters, for variables in context find
+     * @param characters
+     * @param idx
+     * @param params
+     * @return
+     */
     protected int doFindParameterVariable(char[] characters, int idx, List<Object> params){
         String storage = "";
         idx--;
@@ -565,6 +687,12 @@ public enum Operator implements IOperator{
         throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
     }
 
+    /**
+     * join params
+     * @param params
+     * @param delimiter
+     * @return
+     */
     static String objectsJoin(Object[] params, String delimiter){
         StringJoiner joiner = new StringJoiner(delimiter);
         for (Object cs: params) {
@@ -573,6 +701,13 @@ public enum Operator implements IOperator{
         return joiner.toString();
     }
 
+    /**
+     * object transform to map
+     * if map -> map
+     * else map with {"@":param}
+     * @param param
+     * @return
+     */
     static Map object2Map(Object param){
         Map context = new HashMap();
         try {
@@ -581,5 +716,18 @@ public enum Operator implements IOperator{
             context.put("@",param);
         }
         return context;
+    }
+
+    /**
+     * compare two comparable args
+     * @param leftV
+     * @param rightV
+     * @return
+     */
+    static int compare(Object leftV, Object rightV){
+        if(leftV instanceof Comparable && rightV instanceof Comparable){
+            return ((Comparable) leftV).compareTo(rightV);
+        }
+        throw new ExpressionException("some variables is not ");
     }
 }
