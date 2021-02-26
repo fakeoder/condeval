@@ -40,7 +40,7 @@ public class ExpressionTest {
 
     @Test
     public void test01(){
-        Object result =  Expression.eval("(0+2*0)>0",null);
+        Object result =  Expression.eval("(0+2*0)==10",null);
         assert Boolean.valueOf(result.toString()).equals(Boolean.FALSE);
     }
 
@@ -161,6 +161,20 @@ public class ExpressionTest {
         System.out.println(JSONObject.toJSONString(result));
         assert ((Collection)result).size()==5;
     }
+
+    @Test
+    public void test21(){
+        Expression.eval("#{level1.level2.level3}=1",context);
+        System.out.println(JSONObject.toJSONString(context));
+        assert context.containsKey("level1");
+    }
+
+    @Test
+    public void test22(){
+        Object result = Expression.eval("#{level1.level2.level3}=1;equals(${level1.level2.level3},1)",context);
+        assert (Boolean)result;
+    }
+
 
 
 

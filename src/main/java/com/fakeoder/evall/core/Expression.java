@@ -22,6 +22,8 @@ public class Expression {
     private final Stack<Object> variableStack = new CustomStack("VARIABLE");
 
 
+    private final static String USELESS_CHARACTER = "\\s*";
+
     /**
      * finally result
      */
@@ -40,7 +42,7 @@ public class Expression {
         Expression expression = new Expression(context);
         //todo valid this expression
 
-        char[] characters = expressionStr.toCharArray();
+        char[] characters = expressionStr.replaceAll(USELESS_CHARACTER,"").toCharArray();
         String storage = "";
         boolean preIsOperator = false;
         boolean hasLeft = true;
@@ -80,7 +82,14 @@ public class Expression {
                 expression.pushVariable(storage);
             } else {
                 //must be right bracket
-                expression.rightBracketDeal();
+                switch (Operator.valueOfSymbol(storage)){
+                    case BRACKET_RIGHT:
+                        expression.rightBracketDeal();
+                        break;
+                    default:
+                        //do nothing
+                        break;
+                }
             }
         }
 
@@ -91,6 +100,7 @@ public class Expression {
         }
         return expression.variableStack.pop();
     }
+
 
     /**
      *
@@ -136,6 +146,11 @@ public class Expression {
                 pushVariable(variable);
             }else {
                 pushVariables(params);
+
+                //for assign
+                if(operator==Operator.ASSIGN){
+                    pushVariable(context);
+                }
             }
         }else {
             IOperator operatorPre = operatorStack.peek();
@@ -147,10 +162,16 @@ public class Expression {
                 if(operator.isNeedPush()) {
                     operatorStack.push(operator);
                 }
+
+                //for assign
+                if(operator==Operator.ASSIGN){
+                    pushVariable(context);
+                }
+
             }else {
                 if(operator==Operator.BRACKET_RIGHT){
                     rightBracketDeal();
-                }else {
+                } else{
                     List<Object> params = new ArrayList<>();
                     if(operator.isNeedPush()) {
                         operatorStack.push(operator);

@@ -473,6 +473,25 @@ public enum Operator implements IOperator{
         }
     },
 
+    /************ support multiline code ************/
+    ASSIGN(3, "=", Void.class, 0) {
+        @Override
+        public Object eval(Object[] params) {
+            //param[0]:#{a.b} key:a.b
+            String key = unpack(params[0].toString());
+            Object value = params[2];
+            Map<String,Object> context = (Map<String, Object>) params[1];
+            Variable.putMapWithKeyNValue(context, Arrays.asList(key.split(DOT)).stream().iterator(), value);
+            return null;
+        }
+        private final static String DOT = "\\.";
+    },
+    LINEFEED(0, ";", Void.class, -1, false) {
+        @Override
+        public Object eval(Object[] params) {
+            return null;
+        }
+    },
 
     //TODO other operators
 

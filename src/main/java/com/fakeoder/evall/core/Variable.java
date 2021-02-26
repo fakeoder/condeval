@@ -1,8 +1,12 @@
 package com.fakeoder.evall.core;
 
 
+import com.alibaba.fastjson.JSONObject;
 import com.fakeoder.evall.exception.ExpressionException;
 
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -35,6 +39,37 @@ public class Variable {
 
     public static Object realVariable(Object variable, Map<String, Object> context) {
         return VariableMatcher.findRealValue(variable,context);
+    }
+
+    public static void putMapWithKeyNValue(Map<String,Object> context, Iterator<String> keys, Object value){
+        if(keys==null||!keys.hasNext()){
+            return;
+        }
+        String key = keys.next();
+        if(context.containsKey(key)){
+            Object inner = context.get(key);
+            if(inner instanceof Map){
+                putMapWithKeyNValue((Map<String, Object>) inner, keys, value);
+            }else{
+                //has sub level
+                if(keys.hasNext()){
+                    Map<String,Object> sub = new HashMap<>(2);
+                    context.put(key, sub);
+                    putMapWithKeyNValue(sub, keys, value);
+                }else{
+                    context.put(key, value);
+                }
+            }
+        }else{
+            //has sub level
+            if(keys.hasNext()){
+                Map<String,Object> sub = new HashMap<>(2);
+                context.put(key, sub);
+                putMapWithKeyNValue(sub, keys, value);
+            }else{
+                context.put(key, value);
+            }
+        }
     }
 
     enum VariableMatcher{
@@ -143,6 +178,7 @@ public class Variable {
             }
             return variable;
         }
+
 
 
     }
