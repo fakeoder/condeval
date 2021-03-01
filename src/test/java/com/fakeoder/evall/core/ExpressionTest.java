@@ -7,7 +7,7 @@ import java.util.*;
 
 public class ExpressionTest {
 
-    static Map<String,Object> context = new HashMap<>();
+    static Map<String,Object> context;
     static {
         context = new HashMap<>();
 

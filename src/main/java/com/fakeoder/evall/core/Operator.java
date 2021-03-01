@@ -7,6 +7,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 /**
+ * operators for expression
+ * it define many operators and how to eval it
  * @author zhuo
  */
 
@@ -102,7 +104,7 @@ public enum Operator implements IOperator{
         @Override
         public Object eval(Object[] params) {
             if(params[0] instanceof Boolean && params[1] instanceof Boolean) {
-                return Boolean.valueOf(params[0].toString()) && Boolean.valueOf(params[1].toString());
+                return Boolean.parseBoolean(params[0].toString()) && Boolean.parseBoolean(params[1].toString());
             }
             throw new ExpressionException("expect boolean, but not");
         }
@@ -111,7 +113,7 @@ public enum Operator implements IOperator{
         @Override
         public Object eval(Object[] params) {
             if(params[0] instanceof Boolean && params[1] instanceof Boolean) {
-                return Boolean.valueOf(params[0].toString()) || Boolean.valueOf(params[1].toString());
+                return Boolean.parseBoolean(params[0].toString()) || Boolean.parseBoolean(params[1].toString());
             }
             throw new ExpressionException("expect boolean, but not");
         }
@@ -355,15 +357,15 @@ public enum Operator implements IOperator{
         @Override
         public Object eval(Object[] params) {
             if(params[0] instanceof List){
-                Collections.sort((List)params[0],(left,right)->{
-                    Object leftV = Expression.eval(unpack(params[1].toString()),object2Map(left));
-                    Object rightV = Expression.eval(unpack(params[1].toString()),object2Map(right));
+                ((List) params[0]).sort((left, right) -> {
+                    Object leftV = Expression.eval(unpack(params[1].toString()), object2Map(left));
+                    Object rightV = Expression.eval(unpack(params[1].toString()), object2Map(right));
                     String type = params[2].toString();
-                    switch (type){
+                    switch (type) {
                         case ASC:
-                            return compare(leftV,rightV);
+                            return compare(leftV, rightV);
                         case DESC:
-                            return compare(rightV,leftV);
+                            return compare(rightV, leftV);
                         default:
                             throw new ExpressionException("");
                     }
@@ -481,7 +483,7 @@ public enum Operator implements IOperator{
             String key = unpack(params[0].toString());
             Object value = params[2];
             Map<String,Object> context = (Map<String, Object>) params[1];
-            Variable.putMapWithKeyNValue(context, Arrays.asList(key.split(DOT)).stream().iterator(), value);
+            Variable.putMapWithKeyNValue(context, Arrays.stream(key.split(DOT)).iterator(), value);
             return null;
         }
         private final static String DOT = "\\.";
@@ -568,8 +570,7 @@ public enum Operator implements IOperator{
 
     /**
      * check if number of params is valid
-     * @param params
-     * @return
+     * @param params params
      */
     public void checkParameter(Object... params) {
         if(params.length!=this.paramSize){
@@ -579,7 +580,7 @@ public enum Operator implements IOperator{
 
     /**
      * eval before
-     * @param params
+     * @param params params
      */
     public void evalBefore(Object... params){
 //        checkParameter(params);
@@ -590,7 +591,7 @@ public enum Operator implements IOperator{
 
     /**
      * eval after
-     * @param result
+     * @param result eval result
      */
     public void evalAfter(String result){
         if(log.isDebugEnabled()){
@@ -614,8 +615,8 @@ public enum Operator implements IOperator{
 
     /**
      * eval expression value by params
-     * @param params
-     * @return
+     * @param params eval params
+     * @return eval result
      */
     public abstract Object eval(Object[] params);
 
@@ -631,13 +632,13 @@ public enum Operator implements IOperator{
 
     /**
      * method parameter find
-     * @param characters
-     * @param idx
-     * @param params
-     * @return
+     * @param characters expression characters
+     * @param idx index
+     * @param params operator params
+     * @return the new index
      */
     private static int doFindParameter(char[] characters, int idx, List<Object> params){
-        String storage = "";
+        StringBuilder storage = new StringBuilder();
         idx++;
         int right = 0;
         for(;idx<characters.length;idx++){
@@ -645,27 +646,27 @@ public enum Operator implements IOperator{
             switch (character){
                 case '(':
                     right--;
-                    storage+=character;
+                    storage.append(character);
                     break;
                 case ')':
                     right++;
                     if(right>0){
-                        params.add(storage);
+                        params.add(storage.toString());
                         return idx+1;
                     }else {
-                        storage+=character;
+                        storage.append(character);
                     }
                     break;
                 case ',':
                     if(right==0) {
-                        params.add(storage);
-                        storage = "";
+                        params.add(storage.toString());
+                        storage = new StringBuilder();
                     }else{
-                        storage+=character;
+                        storage.append(character);
                     }
                     break;
                 default:
-                    storage+=character;
+                    storage.append(character);
             }
         }
         throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
@@ -673,13 +674,13 @@ public enum Operator implements IOperator{
 
     /**
      * find parameters, for variables in context find
-     * @param characters
-     * @param idx
-     * @param params
-     * @return
+     * @param characters expression characters
+     * @param idx index
+     * @param params operator params
+     * @return new index
      */
     protected int doFindParameterVariable(char[] characters, int idx, List<Object> params){
-        String storage = "";
+        StringBuilder storage = new StringBuilder();
         idx--;
         int right = 0;
         for(;idx<characters.length;idx++){
@@ -687,20 +688,18 @@ public enum Operator implements IOperator{
             switch (character){
                 case '{':
                     right--;
-                    storage+=character;
+                    storage.append(character);
                     break;
                 case '}':
                     right++;
+                    storage.append(character);
                     if(right==0){
-                        storage+=character;
-                        params.add(storage);
+                        params.add(storage.toString());
                         return idx+1;
-                    }else {
-                        storage+=character;
                     }
                     break;
                 default:
-                    storage+=character;
+                    storage.append(character);
             }
         }
         throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
@@ -708,9 +707,9 @@ public enum Operator implements IOperator{
 
     /**
      * join params
-     * @param params
-     * @param delimiter
-     * @return
+     * @param params object array
+     * @param delimiter join delimiter
+     * @return new joined string
      */
     static String objectsJoin(Object[] params, String delimiter){
         StringJoiner joiner = new StringJoiner(delimiter);
@@ -724,8 +723,8 @@ public enum Operator implements IOperator{
      * object transform to map
      * if map -> map
      * else map with {"@":param}
-     * @param param
-     * @return
+     * @param param object
+     * @return map
      */
     static Map object2Map(Object param){
         Map context = new HashMap();
@@ -739,9 +738,9 @@ public enum Operator implements IOperator{
 
     /**
      * compare two comparable args
-     * @param leftV
-     * @param rightV
-     * @return
+     * @param leftV left variable
+     * @param rightV right variable
+     * @return compare result
      */
     static int compare(Object leftV, Object rightV){
         if(leftV instanceof Comparable && rightV instanceof Comparable){
