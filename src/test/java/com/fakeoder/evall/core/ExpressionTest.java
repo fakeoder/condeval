@@ -176,6 +176,40 @@ public class ExpressionTest {
     }
 
 
+    @Test
+    public void test23(){
+        String expression = "#{level1.level2.level3}=1;distinct(${d});equals(${level1.level2.level3},1)";
+        Object result = Expression.eval(expression,context);
+        assert (Boolean)result;
+    }
+
+
+    @Test
+    public void test24(){
+        Object result = Expression.eval("concat(concat('','b'),'c')",context);
+        assert result.toString().equals("abc");
+    }
+
+    @Test
+    public void test25(){
+        Object result = Expression.eval("limit(${d},2)",context);
+        assert ((Collection)result).size() == 2;
+    }
+
+
+    @Test
+    public void test26(){
+        Expression.eval("removeKey(${@},#{b})",context);
+        assert !context.containsKey("b");
+    }
+
+    @Test
+    public void test27(){
+        Object result = Expression.eval("size(${d})",context);
+        assert (int)result == 6;
+    }
+
+
 
 
 }

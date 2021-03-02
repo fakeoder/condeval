@@ -72,6 +72,27 @@ public class Variable {
         }
     }
 
+    public static void removeKey(Map context, Iterator<String> keys) {
+        Map localContext = context;
+        if(keys==null||!keys.hasNext()){
+            return;
+        }
+        while(keys.hasNext()){
+            String key = keys.next();
+            if(!keys.hasNext()){
+                localContext.remove(key);
+            }else{
+                Object value = localContext.get(key);
+                if(value instanceof Map) {
+                    localContext = (Map) value;
+                }else{
+                    return;
+                }
+            }
+        }
+    }
+
+
     enum VariableMatcher{
 
         PATTERN_DIGITAL{
@@ -178,8 +199,6 @@ public class Variable {
             }
             return variable;
         }
-
-
 
     }
 }

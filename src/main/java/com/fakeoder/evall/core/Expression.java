@@ -98,7 +98,7 @@ public class Expression {
             IOperator operator = expression.operatorStack.pop();
             expression.operatorEval(operator);
         }
-        return expression.variableStack.pop();
+        return expression.variableStack.isEmpty() ? null : expression.variableStack.pop();
     }
 
 
@@ -202,7 +202,9 @@ public class Expression {
                 params[paramIdx] = variableStack.pop();
             }
             Object result = backOperator.evalAround(params);
-            pushVariable(result);
+            if(backOperator.isNeedPushValue()) {
+                pushVariable(result);
+            }
         }
     }
 
@@ -228,7 +230,9 @@ public class Expression {
         }
         //todo check logic
         Object result = operator.evalAround(params);
-        pushVariable(result);
+        if(operator.isNeedPushValue()) {
+            pushVariable(result);
+        }
     }
 
 

@@ -77,7 +77,7 @@ public enum Operator implements IOperator{
         }
     },
     //for variable calculate
-    DOLLAR(0, "$", null, 40, false)  {
+    DOLLAR(0, "$", null, 40, false, true)  {
         @Override
         public Object eval(Object[] params) {
             return null;
@@ -89,7 +89,7 @@ public enum Operator implements IOperator{
         }
     },
     //some late calculate method ( example : map/filter )
-    SHARP(0, "#", null, 40, false)  {
+    SHARP(0, "#", null, 40, false, true)  {
         @Override
         public Object eval(Object[] params) {
             return null;
@@ -322,11 +322,39 @@ public enum Operator implements IOperator{
             return doFindParameter(characters,idx,params);
         }
     },
+    REMOVE_KEY(2, "removeKey", Void.class, 40, true, false) {
+        @Override
+        public Object eval(Object[] params) {
+            Map context = (Map) params[0];
+            String key = unpack(params[1].toString());
+            Iterator<String> keys = Arrays.stream(key.split(DOT)).iterator();
+            Variable.removeKey(context, keys);
+            return null;
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+        private final static String DOT = "\\.";
+    },
     //for list
     DISTINCT(1, "distinct", Collection.class, 40) {
         @Override
         public Object eval(Object[] params) {
             return ((Collection)params[0]).stream().distinct().collect(Collectors.toList());
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+    },
+    SIZE(1, "size", Integer.class, 40) {
+        @Override
+        public Object eval(Object[] params) {
+            if(params[0] instanceof Collection) {
+                return ((Collection) params[0]).size();
+            }
+            throw new ExpressionException("params type disMatch:"+JSONObject.toJSONString(params));
         }
         @Override
         public int findParameter(char[] characters, int idx, List<Object> params) {
@@ -371,6 +399,20 @@ public enum Operator implements IOperator{
                     }
                 });
                 return params[0];
+            }
+            throw new ExpressionException("params type disMatch:"+JSONObject.toJSONString(params));
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+    },
+    LIMIT(2, "limit", List.class, 40) {
+        @Override
+        public Object eval(Object[] params) {
+            if(params[0] instanceof List){
+                long limit = (int)params[1];
+                return ((List) params[0]).stream().limit(limit).collect(Collectors.toList());
             }
             throw new ExpressionException("params type disMatch:"+JSONObject.toJSONString(params));
         }
@@ -476,7 +518,7 @@ public enum Operator implements IOperator{
     },
 
     /************ support multiline code ************/
-    ASSIGN(3, "=", Void.class, 0) {
+    ASSIGN(3, "=", Void.class, 0, true, false) {
         @Override
         public Object eval(Object[] params) {
             //param[0]:#{a.b} key:a.b
@@ -488,7 +530,7 @@ public enum Operator implements IOperator{
         }
         private final static String DOT = "\\.";
     },
-    LINEFEED(0, ";", Void.class, -1, false) {
+    LINEFEED(0, ";", Void.class, -1, false, false) {
         @Override
         public Object eval(Object[] params) {
             return null;
@@ -518,12 +560,13 @@ public enum Operator implements IOperator{
         this.priority = priority;
     }
 
-    Operator(int paramSize,String symbol, Class resultType, int priority, boolean isNeedPush){
+    Operator(int paramSize,String symbol, Class resultType, int priority, boolean isNeedPush, boolean isNeedPushValue){
         this.paramSize = paramSize;
         this.symbol = symbol;
         this.resultType = resultType;
         this.priority = priority;
         this.isNeedPush = isNeedPush;
+        this.isNeedPushValue = isNeedPushValue;
     }
 
 
@@ -533,6 +576,7 @@ public enum Operator implements IOperator{
     private final Class resultType;
     private final int priority;
     private boolean isNeedPush = true;
+    private boolean isNeedPushValue = true;
 
     private static final Logger log = Logger.getLogger(Operator.class);
 
@@ -566,6 +610,10 @@ public enum Operator implements IOperator{
     @Override
     public boolean isNeedPush() {
         return isNeedPush;
+    }
+    @Override
+    public boolean isNeedPushValue() {
+        return isNeedPushValue;
     }
 
     /**

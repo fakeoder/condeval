@@ -42,6 +42,12 @@ public interface IOperator{
     boolean isNeedPush();
 
     /**
+     * if this value need be pushed
+     * @return
+     */
+    boolean isNeedPushValue();
+
+    /**
      * compare priority
      * @param o
      * @return
