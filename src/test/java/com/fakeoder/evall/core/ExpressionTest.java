@@ -187,7 +187,7 @@ public class ExpressionTest {
     @Test
     public void test24(){
         Object result = Expression.eval("concat(concat('','b'),'c')",context);
-        assert result.toString().equals("abc");
+        assert result.toString().equals("bc");
     }
 
     @Test

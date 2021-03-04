@@ -1,6 +1,7 @@
 package com.fakeoder.evall.core;
 
 import com.fakeoder.evall.exception.ExpressionException;
+import org.apache.log4j.Logger;
 
 import java.util.*;
 
@@ -8,6 +9,8 @@ import java.util.*;
  * @author zhuo
  */
 public class Expression {
+
+    private static Logger log = Logger.getLogger(Expression.class);
 
     private final Map<String,Object> context;
 
@@ -36,7 +39,8 @@ public class Expression {
      */
     public static Object eval(String expressionStr, Map<String,Object> context){
         if(expressionStr==null||expressionStr.isEmpty()){
-            throw new ExpressionException("expression is empty!");
+            log.error("expression is empty!");
+            return null;
         }
 
         Expression expression = new Expression(context);
