@@ -12,7 +12,9 @@ public class Expression {
 
     private static Logger log = Logger.getLogger(Expression.class);
 
-    private final Map<String,Object> context;
+    private final Map<String,Object> global;
+
+    private final Map<String,Object> local = new HashMap<>();
 
     /**
      * operator stack
@@ -37,13 +39,16 @@ public class Expression {
      * @param expressionStr
      * @return
      */
-    public static Object eval(String expressionStr, Map<String,Object> context){
+    public static Object eval(String expressionStr, Map<String,Object> global){
         if(expressionStr==null||expressionStr.isEmpty()){
             log.error("expression is empty!");
             return null;
         }
+        if(global==null){
+            global = new HashMap<>(0);
+        }
 
-        Expression expression = new Expression(context);
+        Expression expression = new Expression(global);
         //todo valid this expression
 
         char[] characters = expressionStr.replaceAll(USELESS_CHARACTER,"").toCharArray();
@@ -146,14 +151,17 @@ public class Expression {
             //todo this is important, need check.
             idx = operator.findParameter(characters,idx, params);
             if(operator==Operator.DOLLAR){
-                Object variable = Variable.VariableMatcher.findRealValue(params.get(0).toString(),context);
+                Object variable = Variable.VariableMatcher.findRealValue(params.get(0).toString(),local, global);
                 pushVariable(variable);
             }else {
                 pushVariables(params);
 
                 //for assign
                 if(operator==Operator.ASSIGN){
-                    pushVariable(context);
+                    pushVariable(local);
+                }
+                if(operator==Operator.ASSIGN_OUTER){
+                    pushVariable(global);
                 }
             }
         }else {
@@ -169,7 +177,10 @@ public class Expression {
 
                 //for assign
                 if(operator==Operator.ASSIGN){
-                    pushVariable(context);
+                    pushVariable(local);
+                }
+                if(operator==Operator.ASSIGN_OUTER){
+                    pushVariable(global);
                 }
 
             }else {
@@ -183,7 +194,7 @@ public class Expression {
                     //todo this is important, need check.
                     idx = operator.findParameter(characters, idx, params);
                     if(operator==Operator.DOLLAR){
-                        Object variable = Variable.VariableMatcher.findRealValue(params.get(0).toString(),context);
+                        Object variable = Variable.VariableMatcher.findRealValue(params.get(0).toString(), local, global);
                         pushVariable(variable);
                     }else {
                         pushVariables(params);
@@ -225,9 +236,9 @@ public class Expression {
             Object val = variableStack.pop();
             //todo variables?(${name},"abc",123):expression(a+1)
             if(Variable.isVariable(val)) {
-                params[paramIdx] = Variable.realVariable(val,context);
+                params[paramIdx] = Variable.realVariable(val, local, global);
             }else{
-                Object res = Expression.eval(val.toString(),context);
+                Object res = Expression.eval(val.toString(), global);
                 params[paramIdx] = res;
             }
 
@@ -243,8 +254,8 @@ public class Expression {
     /**
      * private
      */
-    private Expression(Map<String,Object> context) {
-        this.context = context;
+    private Expression(Map<String,Object> global) {
+        this.global = global;
     }
 
 

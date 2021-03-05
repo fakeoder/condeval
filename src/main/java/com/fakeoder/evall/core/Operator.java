@@ -248,6 +248,16 @@ public enum Operator implements IOperator{
             return doFindParameter(characters,idx,params);
         }
     },
+    TO_STRING(1, "toString", String.class, 40) {
+        @Override
+        public Object eval(Object[] params) {
+            return "'"+params[0]+"'";
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+    },
     /******************seq*********************/
     MAX_SEQ(1, "maxOf", Object.class, 40) {
         @Override
@@ -322,14 +332,14 @@ public enum Operator implements IOperator{
             return doFindParameter(characters,idx,params);
         }
     },
-    REMOVE_KEY(2, "removeKey", Void.class, 40, true, false) {
+    REMOVE_KEY(2, "removeKey", Void.class, 40) {
         @Override
         public Object eval(Object[] params) {
             Map context = (Map) params[0];
             String key = unpack(params[1].toString());
             Iterator<String> keys = Arrays.stream(key.split(DOT)).iterator();
             Variable.removeKey(context, keys);
-            return null;
+            return context;
         }
         @Override
         public int findParameter(char[] characters, int idx, List<Object> params) {
@@ -519,6 +529,18 @@ public enum Operator implements IOperator{
 
     /************ support multiline code ************/
     ASSIGN(3, "=", Void.class, 0, true, false) {
+        @Override
+        public Object eval(Object[] params) {
+            //param[0]:#{a.b} key:a.b
+            String key = unpack(params[0].toString());
+            Object value = params[2];
+            Map<String,Object> context = (Map<String, Object>) params[1];
+            Variable.putMapWithKeyNValue(context, Arrays.stream(key.split(DOT)).iterator(), value);
+            return null;
+        }
+        private final static String DOT = "\\.";
+    },
+    ASSIGN_OUTER(3, "===", Void.class, 0, true, false) {
         @Override
         public Object eval(Object[] params) {
             //param[0]:#{a.b} key:a.b

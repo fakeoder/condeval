@@ -164,7 +164,7 @@ public class ExpressionTest {
 
     @Test
     public void test21(){
-        Expression.eval("#{level1.level2.level3}=1",context);
+        Expression.eval("#{level1.level2.level3}===1",context);
         System.out.println(JSONObject.toJSONString(context));
         assert context.containsKey("level1");
     }
@@ -199,7 +199,8 @@ public class ExpressionTest {
 
     @Test
     public void test26(){
-        Expression.eval("removeKey(${@},#{b})",context);
+        Expression.eval("#{.}===removeKey(${@},#{b});",context);
+        System.out.println(JSONObject.toJSONString(context));
         assert !context.containsKey("b");
     }
 

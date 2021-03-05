@@ -1,10 +1,6 @@
 package com.fakeoder.evall.core;
 
-
-import com.alibaba.fastjson.JSONObject;
 import com.fakeoder.evall.exception.ExpressionException;
-
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -37,12 +33,14 @@ public class Variable {
 
     }
 
-    public static Object realVariable(Object variable, Map<String, Object> context) {
-        return VariableMatcher.findRealValue(variable,context);
+    public static Object realVariable(Object variable, Map<String, Object> local, Map<String,Object> global) {
+        return VariableMatcher.findRealValue(variable,local, global);
     }
 
     public static void putMapWithKeyNValue(Map<String,Object> context, Iterator<String> keys, Object value){
         if(keys==null||!keys.hasNext()){
+            context.clear();
+            context.putAll((Map) value);
             return;
         }
         String key = keys.next();
@@ -145,7 +143,8 @@ public class Variable {
                 return VARIABLE_PATTERN_CONTEXT.matcher(variable).matches();
             }
 
-            private final Pattern VARIABLE_PATTERN_CONTEXT = Pattern.compile("\\$\\{[a-zA-Z0-9_\\@\\.]+\\}");
+            private final Pattern VARIABLE_PATTERN_CONTEXT = Pattern.compile("\\$\\{[a-zA-Z0-9_\\-\\@\\.]+\\}");
+
 
         },PATTERN_STRING{
             @Override
@@ -158,7 +157,7 @@ public class Variable {
                 return VARIABLE_PATTERN_STRING.matcher(variable).matches();
             }
 
-            private final Pattern VARIABLE_PATTERN_STRING = Pattern.compile("(\".*\")|('.*')");
+            private final Pattern VARIABLE_PATTERN_STRING = Pattern.compile("(\"[\\s\\S]*\")|('[\\s\\S]*')");
 
         };
 
@@ -190,11 +189,15 @@ public class Variable {
         /**
          *
          * @param variable
-         * @param context
+         * @param local
+         * @param global
          * @return
          */
-        public static Object findRealValue(Object variable, Map<String,Object> context){
+        public static Object findRealValue(Object variable, Map<String,Object> local, Map<String,Object> global){
             if(variable instanceof String){
+                Map<String,Object> context = new HashMap<>();
+                context.putAll(global);
+                context.putAll(local);
                 return match(variable.toString()).realValue(variable.toString(), context);
             }
             return variable;
