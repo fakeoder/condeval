@@ -3,6 +3,7 @@ package com.fakeoder.evall.core;
 import com.alibaba.fastjson.JSONObject;
 import org.junit.Test;
 
+import java.math.BigDecimal;
 import java.util.*;
 
 public class ExpressionTest {
@@ -210,6 +211,29 @@ public class ExpressionTest {
         assert (int)result == 6;
     }
 
+    @Test
+    public void test28(){
+        Object result = Expression.eval("new('java.lang.String','')",context);
+        assert (int)result == 6;
+    }
+
+    @Test
+    public void test29(){
+        Object result = Expression.eval("int(123)",context);
+        assert (int)result == 123;
+    }
+
+    @Test
+    public void test30(){
+        Object result = Expression.eval("bigDecimal(123.1)+bigDecimal(321.3)",context);
+        assert result.toString().equals("444.4");
+    }
+
+    @Test
+    public void test31(){
+        Object result = Expression.eval("double(0.2)+double(0.1)",context);
+        assert !result.toString().equals("0.3");
+    }
 
 
 

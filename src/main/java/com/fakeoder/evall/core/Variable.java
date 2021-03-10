@@ -90,6 +90,11 @@ public class Variable {
         }
     }
 
+    enum InnerConstantVariables{
+        //TODO add some variables like osVersion, jdkVersion, e tc
+
+
+    }
 
     enum VariableMatcher{
 

@@ -1,8 +1,13 @@
 package com.fakeoder.evall.core;
 import com.alibaba.fastjson.JSONObject;
 import com.fakeoder.evall.exception.ExpressionException;
+import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.log4j.Logger;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -13,10 +18,90 @@ import java.util.stream.Collectors;
  */
 
 public enum Operator implements IOperator{
+    /************** some inner in time variables ***************/
+    //TODO to be add
 
+    /************** primitive create ****************/
+    //TODO primitive create
+    INT(1, "int", Integer.class, 40){
+        @Override
+        public Object eval(Object[] params) {
+            if(params[0].getClass() == Integer.class){
+                return params[0];
+            }else{
+                return Integer.parseInt(params[0].toString());
+            }
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+    },
+    LONG(1, "long", Integer.class, 40){
+        @Override
+        public Object eval(Object[] params) {
+            if(params[0].getClass() == Long.class){
+                return params[0];
+            }else{
+                return Long.parseLong(params[0].toString());
+            }
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+    },
+    FLOAT(1, "float", Float.class, 40){
+        @Override
+        public Object eval(Object[] params) {
+            if(params[0].getClass() == Float.class){
+                return params[0];
+            }else{
+                return Float.parseFloat(params[0].toString());
+            }
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+    },
+    DOUBLE(1, "double", Integer.class, 40){
+        @Override
+        public Object eval(Object[] params) {
+            if(params[0].getClass() == Double.class){
+                return params[0];
+            }else{
+                return Double.parseDouble(params[0].toString());
+            }
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+    },
+    BIG_DECIMAL(1, "bigDecimal", BigDecimal.class, 40){
+        @Override
+        public Object eval(Object[] params) {
+            if(params[0].getClass() == BigDecimal.class){
+                return params[0];
+            }else{
+                return new BigDecimal(params[0].toString());
+            }
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+    },
+
+
+    /************** for number calculate ***************/
     ADD(2, "+", Number.class, 1){
         @Override
         public Object eval(Object[] params) {
+            if(params[0] instanceof BigDecimal && params[1] instanceof BigDecimal){
+                return ((BigDecimal)params[0]).add((BigDecimal) params[1]);
+            }
             if(params[0] instanceof Number && params[1] instanceof Number){
                 return ((Number)params[0]).doubleValue() + ((Number)params[1]).doubleValue();
             }
@@ -26,6 +111,9 @@ public enum Operator implements IOperator{
     MINUS(2, "-", Number.class, 2) {
         @Override
         public Object eval(Object[] params) {
+            if(params[0] instanceof BigDecimal && params[1] instanceof BigDecimal){
+                return ((BigDecimal)params[0]).subtract((BigDecimal) params[1]);
+            }
             if(params[0] instanceof Number && params[1] instanceof Number){
                 return ((Number)params[0]).doubleValue() - ((Number)params[1]).doubleValue();
             }
@@ -35,6 +123,9 @@ public enum Operator implements IOperator{
     TIME(2, "*", Number.class, 3) {
         @Override
         public Object eval(Object[] params) {
+            if(params[0] instanceof BigDecimal && params[1] instanceof BigDecimal){
+                return ((BigDecimal)params[0]).multiply((BigDecimal) params[1]);
+            }
             if(params[0] instanceof Number && params[1] instanceof Number){
                 return ((Number)params[0]).doubleValue() * ((Number)params[1]).doubleValue();
             }
@@ -44,6 +135,9 @@ public enum Operator implements IOperator{
     DIV(2, "/", Number.class, 3)  {
         @Override
         public Object eval(Object[] params) {
+            if(params[0] instanceof BigDecimal && params[1] instanceof BigDecimal){
+                return ((BigDecimal)params[0]).divide((BigDecimal) params[1]);
+            }
             if(params[0] instanceof Number && params[1] instanceof Number){
                 return ((Number)params[0]).doubleValue() / ((Number)params[1]).doubleValue();
             }
@@ -64,6 +158,8 @@ public enum Operator implements IOperator{
             return doFindParameter(characters,idx,params);
         }
     },
+
+    /************ code delimiter **************/
     BRACKET_LEFT(0, "(", null, 0)  {
         @Override
         public Object eval(Object[] params) {
@@ -100,6 +196,9 @@ public enum Operator implements IOperator{
             return doFindParameterVariable(characters,idx,params);
         }
     },
+
+
+    /************* logic operator ****************/
     AND(2, "&&", Boolean.class, 31)  {
         @Override
         public Object eval(Object[] params) {
@@ -163,6 +262,9 @@ public enum Operator implements IOperator{
             return Double.parseDouble(params[0].toString()) == Double.parseDouble(params[1].toString());
         }
     },
+
+
+    /***************** string api ********************/
     INDEX(2, "indexOf", Integer.class, 40) {
         @Override
         public Object eval(Object[] params) {
@@ -258,7 +360,9 @@ public enum Operator implements IOperator{
             return doFindParameter(characters,idx,params);
         }
     },
-    /******************seq*********************/
+
+
+    /****************** collection api *********************/
     MAX_SEQ(1, "maxOf", Object.class, 40) {
         @Override
         public Object eval(Object[] params) {
@@ -559,7 +663,87 @@ public enum Operator implements IOperator{
         }
     },
 
+    /*********** for java developer **********/
+    INVOKE(6, "invoke", Object.class, 40) {
+        @Override
+        public Object eval(Object[] params) {
+            String className = params[0].toString();
+            String methodName = params[1].toString();
+            String[] paramsTypes = (String[]) params[2];
+            Object object = params[3];
+            Object[] args = (Object[]) params[4];
+            Boolean limit = Boolean.valueOf(params[5].toString());
+            Class[] realParamsTypes = new Class[paramsTypes.length];
+            try {
+                int i = 0;
+                for(String paramType : paramsTypes){
+                    realParamsTypes[i++] = Class.forName(paramType);
+                }
+
+                Class clazz = Class.forName(className);
+                Method method;
+                if(limit) {
+                    method = clazz.getMethod(methodName, realParamsTypes);
+                }else {
+                    method = clazz.getDeclaredMethod(methodName, realParamsTypes);
+                    method.setAccessible(true);
+                }
+                return method.invoke(object, args);
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+    },
+    NEW(4, "new", Object.class, 40) {
+        private final static String DELIMITER = ",";
+        @Override
+        public Object eval(Object[] params) {
+            String className = params[0].toString();
+            String[] paramsTypes = params[1].toString().split(DELIMITER);
+            Object[] args = (Object[]) params[2];
+            Boolean limit = Boolean.valueOf(params[3].toString());
+            Class[] realParamsTypes = new Class[paramsTypes.length];
+            try {
+                int i = 0;
+                for(String paramType : paramsTypes){
+                    realParamsTypes[i++] = Class.forName(paramType);
+                }
+
+                Class clazz = Class.forName(className);
+                Constructor constructor;
+                if(limit) {
+                    constructor = clazz.getConstructor(realParamsTypes);
+                }else{
+                    constructor = clazz.getDeclaredConstructor(realParamsTypes);
+                    constructor.setAccessible(true);
+                }
+                return constructor.newInstance(args);
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch (NoSuchMethodException e) {
+                e.printStackTrace();
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            } catch (InvocationTargetException e) {
+                e.printStackTrace();
+            } catch (InstantiationException e) {
+                e.printStackTrace();
+            }
+
+            return null;
+        }
+    },
+
     //TODO other operators
+
 
     ;
 
