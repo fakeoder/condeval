@@ -27,7 +27,7 @@ public class Expression {
     private final Stack<Object> variableStack = new CustomStack("VARIABLE");
 
 
-    private final static String USELESS_CHARACTER = "\\s*";
+    private final static String USELESS_CHARACTER = "[\\f\\n\\r\\t\\v]*";
 
     /**
      * finally result

@@ -259,6 +259,14 @@ public class ExpressionTest {
     }
 
 
+    @Test
+    public void test35(){
+        Object result = Expression.eval("#{a b c}=${a};${@}",context);
+        System.out.println(JSONObject.toJSONString(result));
+        assert result instanceof List;
+    }
+
+
 
 
 }
