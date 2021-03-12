@@ -210,11 +210,17 @@ public class Expression {
      * visit right bracket, should back, eval and push value
      */
     public void rightBracketDeal(){
-        IOperator backOperator = null;
+        IOperator backOperator;
         while((backOperator=operatorStack.pop())!=Operator.BRACKET_LEFT) {
             Object[] params = new Object[backOperator.getParamSize()];
             for (int paramIdx = backOperator.getParamSize() - 1; paramIdx >= 0; paramIdx--) {
                 params[paramIdx] = variableStack.pop();
+                if(Variable.isVariable(params[paramIdx])) {
+                    params[paramIdx] = Variable.realVariable(params[paramIdx], local, global);
+                }else{
+                    Object res = Expression.eval(params[paramIdx].toString(), global);
+                    params[paramIdx] = res;
+                }
             }
             Object result = backOperator.evalAround(params);
             if(backOperator.isNeedPushValue()) {

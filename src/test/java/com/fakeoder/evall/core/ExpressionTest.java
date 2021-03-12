@@ -32,10 +32,14 @@ public class ExpressionTest {
         List d = new ArrayList(ints);
         d.add(1);
 
+        //e
+        String[] strs = new String[]{"1"};
+
         context.put("a",context_in);
         context.put("b",ints);
         context.put("c",arr);
         context.put("d",d);
+        context.put("e",strs);
     }
 
 
@@ -213,8 +217,8 @@ public class ExpressionTest {
 
     @Test
     public void test28(){
-        Object result = Expression.eval("new('java.lang.String','')",context);
-        assert (int)result == 6;
+        Object result = Expression.eval("new('java.lang.String','java.lang.String',${e},'true')",context);
+        assert result.toString().equals("1");
     }
 
     @Test
@@ -225,8 +229,8 @@ public class ExpressionTest {
 
     @Test
     public void test30(){
-        Object result = Expression.eval("bigDecimal(123.1)+bigDecimal(321.3)",context);
-        assert result.toString().equals("444.4");
+        Object result = Expression.eval("bigDecimal(0.1)+bigDecimal(0.2)",context);
+        assert result.toString().equals("0.3");
     }
 
     @Test
@@ -234,6 +238,26 @@ public class ExpressionTest {
         Object result = Expression.eval("double(0.2)+double(0.1)",context);
         assert !result.toString().equals("0.3");
     }
+
+    @Test
+    public void test32(){
+        Object result = Expression.eval("json(toString('{\"name\":${a},\"value\":${a}}'),${@})",context);
+        assert result instanceof Map;
+
+    }
+
+    @Test
+    public void test33(){
+        Object result = Expression.eval("jsonArray(^('[{\"name\":${a},\"value\":${a}},{\"name\":${b},\"value\":${b}}]'),${@})",context);
+        assert result instanceof List;
+    }
+
+    @Test
+    public void test34(){
+        Object result = Expression.eval("jsonArray(^('[${a},${b}]'),${@})",context);
+        assert result instanceof List;
+    }
+
 
 
 

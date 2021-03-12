@@ -1,7 +1,7 @@
 package com.fakeoder.evall.core;
+import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.fakeoder.evall.exception.ExpressionException;
-import com.sun.org.apache.xpath.internal.operations.Bool;
 import org.apache.log4j.Logger;
 
 import java.lang.reflect.Constructor;
@@ -9,6 +9,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -18,7 +20,7 @@ import java.util.stream.Collectors;
  */
 
 public enum Operator implements IOperator{
-    /************** some inner in time variables ***************/
+    /************** some inner in time generated variables ***************/
     //TODO to be add
 
     /************** primitive create ****************/
@@ -196,6 +198,16 @@ public enum Operator implements IOperator{
             return doFindParameterVariable(characters,idx,params);
         }
     },
+    PARAM(1, "^", String.class, 40) {
+        @Override
+        public Object eval(Object[] params) {
+            return "'"+params[0]+"'";
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameterOne(characters,idx,params);
+        }
+    },
 
 
     /************* logic operator ****************/
@@ -357,7 +369,7 @@ public enum Operator implements IOperator{
         }
         @Override
         public int findParameter(char[] characters, int idx, List<Object> params) {
-            return doFindParameter(characters,idx,params);
+            return doFindParameterOne(characters,idx,params);
         }
     },
 
@@ -491,6 +503,54 @@ public enum Operator implements IOperator{
         public int findParameter(char[] characters, int idx, List<Object> params) {
             return doFindParameter(characters,idx,params);
         }
+    },
+    JSON(2, "json", Map.class, 40) {
+        @Override
+        public Object eval(Object[] params) {
+            String jsonStr = (String) params[0];
+            Map<String,Object> context = (Map<String, Object>) params[1];
+            return buildJSON(jsonStr, context);
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+
+        public JSONObject buildJSON(String jsonStr, Map<String,Object> context){
+            Matcher matcher = PATTERN.matcher(jsonStr);
+            while (matcher.find()){
+                String expression = matcher.group();
+                jsonStr = jsonStr.replace(expression, JSONObject.toJSONString(Expression.eval(expression, context)));
+            }
+            return JSONObject.parseObject(unpackString(jsonStr));
+        }
+
+        private final String REGEX = "\\$\\{[a-zA-Z0-9_\\-\\@\\.]+\\}";
+        private final Pattern PATTERN = Pattern.compile(REGEX);
+    },
+    JSON_ARRAY(2, "jsonArray", List.class, 40) {
+        @Override
+        public Object eval(Object[] params) {
+            String jsonStr = (String) params[0];
+            Map<String,Object> context = (Map<String, Object>) params[1];
+            return buildJSON(jsonStr, context);
+        }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
+
+        public JSONArray buildJSON(String jsonStr, Map<String,Object> context){
+            Matcher matcher = PATTERN.matcher(jsonStr);
+            while (matcher.find()){
+                String expression = matcher.group();
+                jsonStr = jsonStr.replace(expression, JSONObject.toJSONString(Expression.eval(expression, context)));
+            }
+            return JSONArray.parseArray(unpackString(jsonStr));
+        }
+
+        private final String REGEX = "\\$\\{[a-zA-Z0-9_\\-\\@\\.]+\\}";
+        private final Pattern PATTERN = Pattern.compile(REGEX);
     },
     //for List args:[0:list,1:sort column,2:asc/desc]
     SORT(3, "sort", Map.class, 40) {
@@ -701,13 +761,17 @@ public enum Operator implements IOperator{
 
             return null;
         }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
     },
     NEW(4, "new", Object.class, 40) {
         private final static String DELIMITER = ",";
         @Override
         public Object eval(Object[] params) {
             String className = params[0].toString();
-            String[] paramsTypes = params[1].toString().split(DELIMITER);
+            String[] paramsTypes = params[1].toString().equals("")?new String[0]:params[1].toString().split(DELIMITER);
             Object[] args = (Object[]) params[2];
             Boolean limit = Boolean.valueOf(params[3].toString());
             Class[] realParamsTypes = new Class[paramsTypes.length];
@@ -716,16 +780,18 @@ public enum Operator implements IOperator{
                 for(String paramType : paramsTypes){
                     realParamsTypes[i++] = Class.forName(paramType);
                 }
-
                 Class clazz = Class.forName(className);
-                Constructor constructor;
-                if(limit) {
-                    constructor = clazz.getConstructor(realParamsTypes);
-                }else{
-                    constructor = clazz.getDeclaredConstructor(realParamsTypes);
-                    constructor.setAccessible(true);
+                if(realParamsTypes.length>0) {
+                    Constructor constructor;
+                    if (limit) {
+                        constructor = clazz.getConstructor(realParamsTypes);
+                    } else {
+                        constructor = clazz.getDeclaredConstructor(realParamsTypes);
+                        constructor.setAccessible(true);
+                    }
+                    return constructor.newInstance(args);
                 }
-                return constructor.newInstance(args);
+                return clazz.newInstance();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
             } catch (NoSuchMethodException e) {
@@ -740,6 +806,10 @@ public enum Operator implements IOperator{
 
             return null;
         }
+        @Override
+        public int findParameter(char[] characters, int idx, List<Object> params) {
+            return doFindParameter(characters,idx,params);
+        }
     },
 
     //TODO other operators
@@ -749,6 +819,9 @@ public enum Operator implements IOperator{
 
     protected String unpack(String param){
         return param.substring(2,param.length()-1);
+    }
+    protected String unpackString(String param){
+        return param.substring(1,param.length()-1);
     }
 
 
@@ -777,7 +850,7 @@ public enum Operator implements IOperator{
 
 
 
-    private final int paramSize;
+    private int paramSize;
     private final String symbol;
     private final Class resultType;
     private final int priority;
@@ -811,6 +884,11 @@ public enum Operator implements IOperator{
     @Override
     public int getParamSize(){
         return paramSize;
+    }
+
+    @Override
+    public void setParamSize(int paramSize){
+        this.paramSize = paramSize;
     }
 
     @Override
@@ -891,18 +969,68 @@ public enum Operator implements IOperator{
      * @param params operator params
      * @return the new index
      */
-    private static int doFindParameter(char[] characters, int idx, List<Object> params){
+    private static int doFindParameterOne(char[] characters, int idx, List<Object> params){
         StringBuilder storage = new StringBuilder();
         idx++;
         int right = 0;
+        char pre = ' ';
         for(;idx<characters.length;idx++){
             char character = characters[idx];
             switch (character){
                 case '(':
+                    if(pre == '\\'){
+                        break;
+                    }
                     right--;
                     storage.append(character);
                     break;
                 case ')':
+                    if(pre == '\\'){
+                        break;
+                    }
+                    right++;
+                    if(right>0){
+                        params.add(storage.toString());
+                        return idx+1;
+                    }else {
+                        storage.append(character);
+                    }
+                    break;
+                default:
+                    storage.append(character);
+            }
+        }
+        throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
+    }
+
+    /**
+     * method parameter find
+     * @param characters expression characters
+     * @param idx index
+     * @param params operator params
+     * @return the new index
+     */
+    private static int doFindParameter(char[] characters, int idx, List<Object> params){
+        StringBuilder storage = new StringBuilder();
+        idx++;
+        int right = 0;
+        char pre = ' ';
+        for(;idx<characters.length;idx++){
+            char character = characters[idx];
+            switch (character){
+                case '(':
+                    if(pre=='\\'){
+                        storage.append(character);
+                        break;
+                    }
+                    right--;
+                    storage.append(character);
+                    break;
+                case ')':
+                    if(pre=='\\'){
+                        storage.append(character);
+                        break;
+                    }
                     right++;
                     if(right>0){
                         params.add(storage.toString());
@@ -937,14 +1065,21 @@ public enum Operator implements IOperator{
         StringBuilder storage = new StringBuilder();
         idx--;
         int right = 0;
+        char pre = ' ';
         for(;idx<characters.length;idx++){
             char character = characters[idx];
             switch (character){
                 case '{':
+                    if(pre == '\\'){
+                        break;
+                    }
                     right--;
                     storage.append(character);
                     break;
                 case '}':
+                    if(pre == '\\'){
+                        break;
+                    }
                     right++;
                     storage.append(character);
                     if(right==0){
@@ -955,6 +1090,7 @@ public enum Operator implements IOperator{
                 default:
                     storage.append(character);
             }
+            pre = character;
         }
         throw new ExpressionException(String.format("find parameters error! idx:%s",idx));
     }

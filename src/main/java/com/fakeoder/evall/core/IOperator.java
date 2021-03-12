@@ -36,6 +36,13 @@ public interface IOperator{
     int getParamSize();
 
     /**
+     * set parameters size
+     * @param paramSize
+     * @return
+     */
+    void setParamSize(int paramSize);
+
+    /**
      * if this operator need be pushed
      * @return
      */
