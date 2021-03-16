@@ -3,7 +3,6 @@ package com.fakeoder.evall.core;
 import com.alibaba.fastjson.JSONObject;
 import org.junit.Test;
 
-import java.math.BigDecimal;
 import java.util.*;
 
 public class ExpressionTest {
@@ -263,10 +262,19 @@ public class ExpressionTest {
     public void test35(){
         Object result = Expression.eval("#{a b c}=${a};${@}",context);
         System.out.println(JSONObject.toJSONString(result));
-        assert result instanceof List;
+        assert result instanceof Map;
     }
 
+    @Test
+    public void test36(){
+        Object result = Expression.eval("#{'abc'}",null);
+        System.out.println(JSONObject.toJSONString(result));
+    }
 
-
+    @Test
+    public void test37(){
+        Object result = Expression.doEval("'abc'",null);
+        assert result.equals("abc");
+    }
 
 }

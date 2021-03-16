@@ -29,10 +29,18 @@ public class Expression {
 
     private final static String USELESS_CHARACTER = "[\\f\\n\\r\\t\\v]*";
 
+    private final static String singleQuotation = "'";
+    private final static String doubleQuotation = "\"";
+
     /**
      * finally result
      */
     private Object result;
+
+    public static Object doEval(String expressionStr, Map<String,Object> global){
+        return unpack(eval(expressionStr,global));
+
+    }
 
     /**
      * load express from expression string
@@ -50,6 +58,10 @@ public class Expression {
 
         Expression expression = new Expression(global);
         //todo valid this expression
+
+        if(Variable.isVariable(expressionStr)){
+            return Variable.realVariable(expressionStr, expression.local, global);
+        }
 
         char[] characters = expressionStr.replaceAll(USELESS_CHARACTER,"").toCharArray();
         String storage = "";
@@ -108,6 +120,21 @@ public class Expression {
             expression.operatorEval(operator);
         }
         return expression.variableStack.isEmpty() ? null : expression.variableStack.pop();
+    }
+
+    /**
+     * unpack msg, such as 'abc' -> abc
+     * @param result
+     * @return
+     */
+    public static Object unpack(Object result){
+        if(result instanceof String) {
+            String resultStr = result.toString();
+            if((resultStr.startsWith("'")&&resultStr.endsWith("'"))||(resultStr.startsWith("\"")&&resultStr.endsWith("\""))){
+                return resultStr.substring(1,resultStr.length()-1);
+            }
+        }
+        return result;
     }
 
 
