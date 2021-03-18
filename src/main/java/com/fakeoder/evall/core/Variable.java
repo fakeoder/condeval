@@ -140,6 +140,9 @@ public class Variable {
                         context = null;
                     }
                 }
+                if(result instanceof String){
+                    return Operator.packString(result.toString());
+                }
                 return result;
             }
 
@@ -154,7 +157,7 @@ public class Variable {
         },PATTERN_STRING{
             @Override
             String realValue(String variable, Map<String,Object> context) {
-                return variable.substring(1,variable.length()-1);
+                return variable;
             }
 
             @Override

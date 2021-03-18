@@ -82,7 +82,7 @@ public class ExpressionTest {
     @Test
     public void test07(){
         Object result =  Expression.eval("subString('abcdef',2,2)",null);
-        assert result.toString().isEmpty();
+        assert Operator.unpackString(result.toString()).isEmpty();
     }
 
     @Test
@@ -99,8 +99,8 @@ public class ExpressionTest {
 
     @Test
     public void test10(){
-        Object result =  Expression.eval("if(${a.b}==${a.b},'a','b')",context);
-        assert result.toString().equals("a");
+        Object result =  Expression.eval("if(equals(${a.b},${a.b}),'a','b')",context);
+        assert Operator.unpackString(result.toString()).equals("a");
     }
 
     @Test
@@ -191,7 +191,7 @@ public class ExpressionTest {
     @Test
     public void test24(){
         Object result = Expression.eval("concat(concat('','b'),'c')",context);
-        assert result.toString().equals("bc");
+        assert result.toString().equals("'bc'");
     }
 
     @Test
@@ -240,20 +240,20 @@ public class ExpressionTest {
 
     @Test
     public void test32(){
-        Object result = Expression.eval("json(toString('{\"name\":${a},\"value\":${a}}'),${@})",context);
+        Object result = Expression.eval("json('{\"name\":${a},\"value\":${a}}',${@})",context);
         assert result instanceof Map;
 
     }
 
     @Test
     public void test33(){
-        Object result = Expression.eval("jsonArray(^('[{\"name\":${a},\"value\":${a}},{\"name\":${b},\"value\":${b}}]'),${@})",context);
+        Object result = Expression.eval("jsonArray('[{\"name\":${a},\"value\":${a}},{\"name\":${b},\"value\":${b}}]',${@})",context);
         assert result instanceof List;
     }
 
     @Test
     public void test34(){
-        Object result = Expression.eval("jsonArray(^('[${a},${b}]'),${@})",context);
+        Object result = Expression.eval("jsonArray('[${a},${b}]',${@})",context);
         assert result instanceof List;
     }
 
@@ -276,5 +276,6 @@ public class ExpressionTest {
         Object result = Expression.doEval("'abc'",null);
         assert result.equals("abc");
     }
+
 
 }

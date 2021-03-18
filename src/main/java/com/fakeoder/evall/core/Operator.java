@@ -198,16 +198,6 @@ public enum Operator implements IOperator{
             return doFindParameterVariable(characters,idx,params);
         }
     },
-    PARAM(1, "^", String.class, 40) {
-        @Override
-        public Object eval(Object[] params) {
-            return "'"+params[0]+"'";
-        }
-        @Override
-        public int findParameter(char[] characters, int idx, List<Object> params) {
-            return doFindParameterOne(characters,idx,params);
-        }
-    },
 
 
     /************* logic operator ****************/
@@ -280,7 +270,9 @@ public enum Operator implements IOperator{
     INDEX(2, "indexOf", Integer.class, 40) {
         @Override
         public Object eval(Object[] params) {
-            return params[0].toString().indexOf(params[1].toString());
+            String str1 = params[0].toString();
+            String str2 = params[1].toString();
+            return unpackString(str1).indexOf(unpackString(str2));
         }
         @Override
         public int findParameter(char[] characters, int idx, List<Object> params) {
@@ -305,7 +297,7 @@ public enum Operator implements IOperator{
     CONTAINS(2, "contains", Boolean.class, 40) {
         @Override
         public Object eval(Object[] params) {
-            return params[0].toString().contains(params[1].toString());
+            return unpackString(params[0].toString()).contains(unpackString(params[1].toString()));
         }
         @Override
         public int findParameter(char[] characters, int idx, List<Object> params) {
@@ -315,7 +307,7 @@ public enum Operator implements IOperator{
     START_WITH(2, "startWith", Boolean.class, 40) {
         @Override
         public Object eval(Object[] params) {
-            return params[0].toString().startsWith(params[1].toString());
+            return unpackString(params[0].toString()).startsWith(unpackString(params[1].toString()));
         }
         @Override
         public int findParameter(char[] characters, int idx, List<Object> params) {
@@ -325,7 +317,7 @@ public enum Operator implements IOperator{
     END_WITH(2, "endWith", Boolean.class, 40) {
         @Override
         public Object eval(Object[] params) {
-            return params[0].toString().endsWith(params[1].toString());
+            return unpackString(params[0].toString()).endsWith(unpackString(params[1].toString()));
         }
         @Override
         public int findParameter(char[] characters, int idx, List<Object> params) {
@@ -335,7 +327,7 @@ public enum Operator implements IOperator{
     SUBSTRING(3, "subString", String.class, 40) {
         @Override
         public Object eval(Object[] params) {
-            return params[0].toString().substring(Integer.parseInt(params[1].toString()), Integer.parseInt(params[2].toString()));
+            return packString(unpackString(params[0].toString()).substring(Integer.parseInt(params[1].toString()), Integer.parseInt(params[2].toString())));
         }
         @Override
         public int findParameter(char[] characters, int idx, List<Object> params) {
@@ -360,16 +352,6 @@ public enum Operator implements IOperator{
         @Override
         public int findParameter(char[] characters, int idx, List<Object> params) {
             return doFindParameter(characters,idx,params);
-        }
-    },
-    TO_STRING(1, "toString", String.class, 40) {
-        @Override
-        public Object eval(Object[] params) {
-            return "'"+params[0]+"'";
-        }
-        @Override
-        public int findParameter(char[] characters, int idx, List<Object> params) {
-            return doFindParameterOne(characters,idx,params);
         }
     },
 
@@ -554,8 +536,8 @@ public enum Operator implements IOperator{
     },
     //for List args:[0:list,1:sort column,2:asc/desc]
     SORT(3, "sort", Map.class, 40) {
-        private final static String ASC = "asc";
-        private final static String DESC = "desc";
+        private final static String ASC = "'asc'";
+        private final static String DESC = "'desc'";
         @Override
         public Object eval(Object[] params) {
             if(params[0] instanceof List){
@@ -773,14 +755,14 @@ public enum Operator implements IOperator{
             String className = params[0].toString();
             String[] paramsTypes = params[1].toString().equals("")?new String[0]:params[1].toString().split(DELIMITER);
             Object[] args = (Object[]) params[2];
-            Boolean limit = Boolean.valueOf(params[3].toString());
+            Boolean limit = Boolean.valueOf(unpackString(params[3].toString()));
             Class[] realParamsTypes = new Class[paramsTypes.length];
             try {
                 int i = 0;
                 for(String paramType : paramsTypes){
-                    realParamsTypes[i++] = Class.forName(paramType);
+                    realParamsTypes[i++] = Class.forName(unpackString(paramType));
                 }
-                Class clazz = Class.forName(className);
+                Class clazz = Class.forName(unpackString(className));
                 if(realParamsTypes.length>0) {
                     Constructor constructor;
                     if (limit) {
@@ -817,12 +799,6 @@ public enum Operator implements IOperator{
 
     ;
 
-    protected String unpack(String param){
-        return param.substring(2,param.length()-1);
-    }
-    protected String unpackString(String param){
-        return param.substring(1,param.length()-1);
-    }
 
 
     private static final Map<String, Operator> SYMBOL_MAP = new HashMap<>(32);
@@ -1013,7 +989,7 @@ public enum Operator implements IOperator{
     private static int doFindParameter(char[] characters, int idx, List<Object> params){
         StringBuilder storage = new StringBuilder();
         idx++;
-        int right = 0;
+        int parentheses = 0,brace = 0,singleQuotation=0,doubleQuotation=0;
         char pre = ' ';
         for(;idx<characters.length;idx++){
             char character = characters[idx];
@@ -1023,7 +999,31 @@ public enum Operator implements IOperator{
                         storage.append(character);
                         break;
                     }
-                    right--;
+                    parentheses--;
+                    storage.append(character);
+                    break;
+                case '{':
+                    if(pre=='\\'){
+                        storage.append(character);
+                        break;
+                    }
+                    brace--;
+                    storage.append(character);
+                    break;
+                case '"':
+                    if(pre=='\\'){
+                        storage.append(character);
+                        break;
+                    }
+                    doubleQuotation++;
+                    storage.append(character);
+                    break;
+                case '\'':
+                    if(pre=='\\'){
+                        storage.append(character);
+                        break;
+                    }
+                    singleQuotation++;
                     storage.append(character);
                     break;
                 case ')':
@@ -1031,8 +1031,21 @@ public enum Operator implements IOperator{
                         storage.append(character);
                         break;
                     }
-                    right++;
-                    if(right>0){
+                    parentheses++;
+                    if(parentheses>0){
+                        params.add(storage.toString());
+                        return idx+1;
+                    }else {
+                        storage.append(character);
+                    }
+                    break;
+                case '}':
+                    if(pre=='\\'){
+                        storage.append(character);
+                        break;
+                    }
+                    brace++;
+                    if(parentheses>0){
                         params.add(storage.toString());
                         return idx+1;
                     }else {
@@ -1040,7 +1053,7 @@ public enum Operator implements IOperator{
                     }
                     break;
                 case ',':
-                    if(right==0) {
+                    if(parentheses==0&&brace==0&&singleQuotation%2==0&&doubleQuotation%2==0) {
                         params.add(storage.toString());
                         storage = new StringBuilder();
                     }else{
@@ -1104,9 +1117,9 @@ public enum Operator implements IOperator{
     static String objectsJoin(Object[] params, String delimiter){
         StringJoiner joiner = new StringJoiner(delimiter);
         for (Object cs: params) {
-            joiner.add((CharSequence) cs);
+            joiner.add(unpackString(cs.toString()));
         }
-        return joiner.toString();
+        return packString(joiner.toString());
     }
 
     /**
@@ -1137,5 +1150,19 @@ public enum Operator implements IOperator{
             return ((Comparable) leftV).compareTo(rightV);
         }
         throw new ExpressionException("some variables is not ");
+    }
+
+    public static String unpack(String param){
+        return param.substring(2,param.length()-1);
+    }
+    public static String unpackString(String param){
+        if(param.length()==2){
+            return "";
+        }
+        return param.substring(1,param.length()-1);
+    }
+
+    public static String packString(String str){
+        return "'"+str+"'";
     }
 }
